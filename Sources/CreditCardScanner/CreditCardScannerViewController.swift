@@ -228,22 +228,19 @@ private extension CreditCardScannerViewController {
         // vertical size the same (in buffer pixels). Also try to keep the
         // horizontal size the same up to a maximum ratio.
 
-
-        // TODO: portrait values, make separate for landscape
-        let desiredHeightRatio = 0.55 // TODO: mess w/ these values to resemble credit card?
-        let desiredWidthRatio = 0.7
         let maxPortraitWidth = 0.9
-
-        
+        let desiredRatio: (height: Double, width: Double) = currentOrientation.isPortrait
+            ? (height: 0.55, width: 0.7)
+            : (height: 0.75, width: 0.7)
 
         switch currentOrientation {
         case .portrait, .portraitUpsideDown, .unknown: // TODO: is portraitUpsideDown correct?
-            let width = min(desiredWidthRatio * bufferAspectRatio, maxPortraitWidth)
-            let height = desiredHeightRatio / bufferAspectRatio
+            let width = min(desiredRatio.width * bufferAspectRatio, maxPortraitWidth)
+            let height = desiredRatio.height / bufferAspectRatio
             return CGSize(width: width, height: height)
 
         default:
-            return CGSize(width: desiredWidthRatio, height: desiredHeightRatio)
+            return CGSize(width: desiredRatio.width, height: desiredRatio.height)
         }
     }
 
