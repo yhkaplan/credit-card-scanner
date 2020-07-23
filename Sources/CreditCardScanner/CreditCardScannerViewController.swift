@@ -1,14 +1,11 @@
-//
-//  CreditCardScannerViewController.swift
-//  CreditCardScannerPackageDescription
-//
 //  Created by josh on 2020/07/23.
-//
 
 #if canImport(UIKit)
 #if canImport(AVFoundation)
+#if canImport(Vision)
 import UIKit
 import AVFoundation
+import Vision
 
 ///
 open class CreditCardScannerViewController: UIViewController {
@@ -22,14 +19,23 @@ open class CreditCardScannerViewController: UIViewController {
     open var dataView = UILabel() // TODO: rename to dataLabel?
     /// Mask layer that covering area around camera view
     open var maskLayer = CAShapeLayer()
+    /// Green boxes that appear when data matching that necessary appears
+    private var boxLayers: [CAShapeLayer] = []
+
+    // MARK: - Vision-related
+    public var request: VNRecognizeTextRequest!//(completionHandler: recognizeTextHandler)
 
     // MARK: - Capture related
     private var captureDevice: AVCaptureDevice?
     private let captureSession = AVCaptureSession()
-    private let captureSessionQueue = DispatchQueue(label: "com.yhkaplan.credit-card-scanner.captureSessionQueue")
+    private let captureSessionQueue = DispatchQueue(
+        label: "com.yhkaplan.credit-card-scanner.captureSessionQueue"
+    )
 
     private let videoDataOutput = AVCaptureVideoDataOutput()
-    private let videoDataOutputQueue = DispatchQueue(label: "com.yhkaplan.credit-card-scanner.videoDataOutputSessionQueue")
+    private let videoDataOutputQueue = DispatchQueue(
+        label: "com.yhkaplan.credit-card-scanner.videoDataOutputSessionQueue"
+    )
 
     // MARK: - Region of interest and text orientation
     /// Region of video data output buffer that recognition should be run on.
@@ -46,14 +52,28 @@ open class CreditCardScannerViewController: UIViewController {
     /// Transform from UI orientation to buffer orientation.
     private var uiRotationTransform = CGAffineTransform.identity
     /// Transform bottom-left coordinates to top-left.
-    private var bottomToTopTransform = CGAffineTransform(scaleX: 1.0, y: -1.0).translatedBy(x: 0.0, y: -1.0)
+    private var bottomToTopTransform = CGAffineTransform(scaleX: 1.0, y: -1.0)
+        .translatedBy(x: 0.0, y: -1.0)
     /// Transform coordinates in ROI to global coordinates (still normalized).
     private var roiToGlobalTransform = CGAffineTransform.identity
     /// Vision -> AVF coordinate transform.
     private var visionToAVFTransform = CGAffineTransform.identity
 
+    public init() {
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    public required init?(coder: NSCoder) {
+        fatalError("Not implemented")
+    }
+
     open override func viewDidLoad() {
         super.viewDidLoad()
+
+        // Set up vision request before letting ViewController set up the camera
+        // so that it exists when the first buffer is received.
+        request = VNRecognizeTextRequest(completionHandler: recognizeTextHandler)
 
         dataView.font = .monospacedSystemFont(ofSize: 30.0, weight: .regular)
         dataView.textAlignment = .center
@@ -83,7 +103,10 @@ open class CreditCardScannerViewController: UIViewController {
     }
 
     // TODO: solve jitter during screen rotation
-    open override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+    open override func viewWillTransition(
+        to size: CGSize,
+        with coordinator: UIViewControllerTransitionCoordinator
+    ) {
         super.viewWillTransition(to: size, with: coordinator)
 
         // Only change the current orientation if the new one is landscape or
@@ -142,7 +165,11 @@ private extension CreditCardScannerViewController {
     }
 
     func setupCamera() {
-        guard let captureDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
+        guard let captureDevice = AVCaptureDevice.default(
+            .builtInWideAngleCamera,
+            for: .video,
+            position: .back
+        ) else {
             // TODO: call some error delegate or completion handler here
             return
         }
@@ -199,7 +226,9 @@ private extension CreditCardScannerViewController {
     func setupVideoDataOutput() {
         videoDataOutput.alwaysDiscardsLateVideoFrames = true
         videoDataOutput.setSampleBufferDelegate(self, queue: videoDataOutputQueue)
-        videoDataOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarFullRange]
+        videoDataOutput.videoSettings = [
+            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
+        ]
     }
 
     func calculateRegionOfInterest() {
@@ -289,11 +318,81 @@ private extension CreditCardScannerViewController {
         numFrame.origin.y += numFrame.size.height
         dataView.frame = numFrame
     }
+
+    func recognizeTextHandler(request: VNRequest, error: Error?) {
+        var data: [String] = []
+        var greenBoxes: [CGRect] = [] // Shows words that might be serials
+
+        guard let results = request.results as? [VNRecognizedTextObservation] else { return }
+
+        let maxCandidates = 1
+        for result in results { // TODO: process text here
+            guard let candidate = result.topCandidates(maxCandidates).first else { continue }
+
+            print(candidate.string)
+            let range = candidate.string.range(of: candidate.string)!
+            if let box = try? candidate.boundingBox(for: range)?.boundingBox {
+                greenBoxes.append(box)
+            }
+        }
+
+        DispatchQueue.main.async { [weak self] in
+            self?.show(boxes: greenBoxes, color: UIColor.green.cgColor)
+        }
+    }
+
+    func show(boxes: [CGRect], color: CGColor) {
+        let layer = cameraView.videoPreviewLayer
+        removeBoxes()
+        boxes.forEach { box in
+            let metadataOutputRect = box.applying(visionToAVFTransform)
+            let rect = layer.layerRectConverted(fromMetadataOutputRect: metadataOutputRect)
+            draw(rect: rect, color: color)
+        }
+    }
+
+    func draw(rect: CGRect, color: CGColor) {
+        let layer = CAShapeLayer()
+        layer.opacity = 0.5
+        layer.borderColor = color
+        layer.borderWidth = 1.0
+        layer.frame = rect
+        boxLayers.append(layer)
+        cameraView.videoPreviewLayer.insertSublayer(layer, at: 1)
+    }
+
+    func removeBoxes() {
+        boxLayers.forEach { $0.removeFromSuperlayer() }
+        boxLayers.removeAll()
+    }
 }
 
 extension CreditCardScannerViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
-    public func captureOutput(_ output: AVCaptureOutput, didDrop sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        // Implemented in x // TODO:
+    public func captureOutput(
+        _ output: AVCaptureOutput,
+        didOutput sampleBuffer: CMSampleBuffer,
+        from connection: AVCaptureConnection
+    ) {
+        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        // Configure for running in real-time.
+        request.recognitionLevel = .fast
+        // Language correction won't help recognizing credit card info. It also
+        // makes recognition slower.
+        request.usesLanguageCorrection = false
+        // Only run on the region of interest for maximum speed.
+        request.regionOfInterest = regionOfInterest
+
+        let requestHandler = VNImageRequestHandler(
+            cvPixelBuffer: pixelBuffer,
+            orientation: textOrientation,
+            options: [:]
+        )
+
+        do {
+            try requestHandler.perform([request])
+        } catch {
+            // TODO: error handling
+        }
     }
 }
 
@@ -311,5 +410,6 @@ fileprivate extension AVCaptureVideoOrientation {
     }
 }
 
+#endif
 #endif
 #endif
