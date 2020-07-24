@@ -6,6 +6,7 @@
 import UIKit
 import AVFoundation
 import Vision
+import Reg
 
 ///
 open class CreditCardScannerViewController: UIViewController {
@@ -23,7 +24,12 @@ open class CreditCardScannerViewController: UIViewController {
     private var boxLayers: [CAShapeLayer] = []
 
     // MARK: - Vision-related
-    public var request: VNRecognizeTextRequest!//(completionHandler: recognizeTextHandler)
+    public lazy var request = VNRecognizeTextRequest(completionHandler: recognizeTextHandler)
+
+    public var finalMatch: (cardNumber: String?, name: String?, date: String?)
+    public var matches: [Match: Int]  = [:]// int is count
+    public enum MatchKind: Hashable { case cardNumber, name, date }
+    public struct Match: Hashable { let kind: MatchKind; let string: String }
 
     // MARK: - Capture related
     private var captureDevice: AVCaptureDevice?
@@ -32,7 +38,7 @@ open class CreditCardScannerViewController: UIViewController {
         label: "com.yhkaplan.credit-card-scanner.captureSessionQueue"
     )
 
-    private let videoDataOutput = AVCaptureVideoDataOutput()
+    private let videoDataOutput = AVCaptureVideoDataOutput() // use AVCapturePhotoOutput?
     private let videoDataOutputQueue = DispatchQueue(
         label: "com.yhkaplan.credit-card-scanner.videoDataOutputSessionQueue"
     )
@@ -68,15 +74,28 @@ open class CreditCardScannerViewController: UIViewController {
         fatalError("Not implemented")
     }
 
+    @objc func takePhoto() {
+        var photoSettings = AVCapturePhotoSettings()
+        photoSettings.isHighResolutionPhotoEnabled = true
+//        videoDataOutput
+    }
+
     open override func viewDidLoad() {
         super.viewDidLoad()
 
         // Set up vision request before letting ViewController set up the camera
         // so that it exists when the first buffer is received.
-        request = VNRecognizeTextRequest(completionHandler: recognizeTextHandler)
+        _ = request
+
+        let gesture = UITapGestureRecognizer(target: self, action: #selector(takePhoto))
+        cutoutView.addGestureRecognizer(gesture)
 
         dataView.font = .monospacedSystemFont(ofSize: 30.0, weight: .regular)
+        dataView.backgroundColor = .white
+        dataView.textColor = .black
+        dataView.isHidden = true
         dataView.textAlignment = .center
+        dataView.numberOfLines = 0
 
         layoutSubviews()
 
@@ -323,21 +342,107 @@ private extension CreditCardScannerViewController {
         var data: [String] = []
         var greenBoxes: [CGRect] = [] // Shows words that might be serials
 
+        // too narrow (more spaces???)
+//        let creditCardNumber: Regex = #"^(?:4[0-9]{12}(?:[0-9]{3})?|[25][1-7][0-9]{14}|6(?:011|5[0-9][0-9])[0-9]{12}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|(?:2131|1800|35\d{3})\d{11})$"#
+        let creditCardNumber = #"\d{4}\h+\d{4}\h+\d{4}\h+\d{4}"#
+        // too narrow
+        let date = #"\d{2}\/\d{2}"#
+        // too broad
+        // mrs, mr
+        let name = #"^[A-z]{2,}\h([A-z.]+\h)?[A-z]{2,}$"# // TODO: also filter out keywords: Mastercard,JCB,Visa,Express,bank,card
+
         guard let results = request.results as? [VNRecognizedTextObservation] else { return }
 
         let maxCandidates = 1
         for result in results { // TODO: process text here
-            guard let candidate = result.topCandidates(maxCandidates).first else { continue }
+            guard let candidate = result.topCandidates(maxCandidates).first, candidate.confidence > 0.1 else { continue }
 
-            print(candidate.string)
-            let range = candidate.string.range(of: candidate.string)!
-            if let box = try? candidate.boundingBox(for: range)?.boundingBox {
+            // TODO: grab entire candidate string, then search inside it for matching regexes
+            // the reason being that cards have prefixes like `Valid Through` etc
+            let string = candidate.string
+
+            if string =~ Regex(creditCardNumber) {
+                let match = Match(kind: .cardNumber, string: string)
+                if let count = matches[match] {
+                    matches[match] = count + 1
+                } else {
+                    matches[match] = 1
+                }
+
+                if matches[match] ?? 0 >= 1 {
+                    print("Num: " + candidate.string)
+                    finalMatch.cardNumber = string
+                }
+            } else if string =~ Regex(date) {
+                let match = Match(kind: .date, string: string)
+                if let count = matches[match] {
+                    matches[match] = count + 1
+                } else {
+                    matches[match] = 1
+                }
+
+                if matches[match] ?? 0 >= 10 {
+                    print("Date: " + string)
+                    finalMatch.date = string
+                }
+            } else if string =~ Regex(name) {
+                let match = Match(kind: .name, string: string)
+                if let count = matches[match] {
+                    matches[match] = count + 1
+                } else {
+                    matches[match] = 1
+                }
+
+                if matches[match] ?? 0 >= 10 {
+                    print("Name: " + string)
+                    finalMatch.name = string
+                }
+            } else {
+                return
+            }
+
+            let range1 = string.range(of: creditCardNumber, options: .regularExpression, range: nil, locale: nil)
+            let range2 = string.range(of: name, options: .regularExpression, range: nil, locale: nil)
+            let range3 = string.range(of: date, options: .regularExpression, range: nil, locale: nil)
+//            let range = candidate.string.range(of: candidate.string)!
+            /* TODO: bounding box for range is tiny so range is prob off or something...
+             ▿ Optional<CGRect>
+             ▿ some : (0.37872559095580677, 0.09671993271656865, 0.2091469681397739, 0.08158116063919252)
+               ▿ origin : (0.37872559095580677, 0.09671993271656865)
+                 - x : 0.37872559095580677
+                 - y : 0.09671993271656865
+               ▿ size : (0.2091469681397739, 0.08158116063919252)
+                 - width : 0.2091469681397739
+                 - height : 0.08158116063919252
+             */
+            if let range1 = range1, let box = try? candidate.boundingBox(for: range1)?.boundingBox { // TODO: bounding box not working?
                 greenBoxes.append(box)
+            } else if let range2 = range2, let box = try? candidate.boundingBox(for: range2)?.boundingBox {
+                greenBoxes.append(box)
+            } else if let range3 = range3, let box = try? candidate.boundingBox(for: range3)?.boundingBox {
+               greenBoxes.append(box)
+            }
+
+            if let cardNumber = finalMatch.cardNumber, let name = finalMatch.name, let date = finalMatch.date {
+                showMatches(string: [cardNumber, name, date].joined(separator: "\n"))
             }
         }
 
         DispatchQueue.main.async { [weak self] in
             self?.show(boxes: greenBoxes, color: UIColor.green.cgColor)
+        }
+    }
+
+    func showMatches(string: String) {
+        // Found a definite match.
+        // Stop the camera synchronously to ensure that no further buffers are
+        // received. Then update the number view asynchronously.
+        captureSessionQueue.sync { [weak self] in
+            self?.captureSession.stopRunning()
+            DispatchQueue.main.async { [weak self] in
+                self?.dataView.text = string
+                self?.dataView.isHidden = false
+            }
         }
     }
 
@@ -375,7 +480,8 @@ extension CreditCardScannerViewController: AVCaptureVideoDataOutputSampleBufferD
     ) {
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         // Configure for running in real-time.
-        request.recognitionLevel = .fast
+        request.recognitionLevel = .fast // TODO: use photo or another thread?
+
         // Language correction won't help recognizing credit card info. It also
         // makes recognition slower.
         request.usesLanguageCorrection = false
