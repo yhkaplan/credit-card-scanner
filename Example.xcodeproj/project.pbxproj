@@ -16,7 +16,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		038C3CDE24C94E4700B95F08 /* credit-card-scanner */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "credit-card-scanner"; sourceTree = "<group>"; };
+		0306EECB24CABAB9003933AD /* credit-card-scanner */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "credit-card-scanner"; sourceTree = "<group>"; };
 		03D8495E24C93FAB00AFF588 /* Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Example.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		03D8496124C93FAB00AFF588 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		03D8496324C93FAB00AFF588 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -41,7 +41,7 @@
 		03D8495524C93FAB00AFF588 = {
 			isa = PBXGroup;
 			children = (
-				038C3CDE24C94E4700B95F08 /* credit-card-scanner */,
+				0306EECB24CABAB9003933AD /* credit-card-scanner */,
 				03D8496024C93FAB00AFF588 /* Example */,
 				03D8495F24C93FAB00AFF588 /* Products */,
 				03D8497524C9405200AFF588 /* Frameworks */,
