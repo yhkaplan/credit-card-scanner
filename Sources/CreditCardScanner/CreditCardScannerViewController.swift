@@ -8,12 +8,30 @@ import AVFoundation
 import Vision
 import Reg
 
+/// Conform to this delegate to get notified of key events
+public protocol CreditCardScannerViewControllerDelegate: AnyObject {
+    /// Called user taps the cancel button. Comes with a default implementation for UIViewControllers.
+    /// - Warning: The viewController does not auto-dismiss. You must dismiss the viewController
+    func creditCardScannerViewControllerDidCancel(_ viewController: CreditCardScannerViewController)
+    /// Called when an error is encountered
+    func creditCardScannerViewController(_ viewController: CreditCardScannerViewController, didErrorWith error: CreditCardScannerError)
+    /// Called when finished successfully
+    /// - Note: successful finish does not guarentee that all credit card info can be extracted
+    func creditCardScannerViewController(_ viewController: CreditCardScannerViewController, didFinishWith card: CreditCard)
+}
+
+public extension CreditCardScannerViewControllerDelegate where Self: UIViewController {
+    func creditCardScannerViewControllerDidCancel(_ viewController: CreditCardScannerViewController) {
+        viewController.dismiss(animated: true)
+    }
+}
+
 ///
 open class CreditCardScannerViewController: UIViewController {
 
     // MARK: - Subviews and layers
     /// View representing live camera
-    public let cameraView = CameraView()
+    private let cameraView = CameraView()
     /// View representing the cutout rectangle to align card with
     open var cutoutView = UIView()
     /// View that appears when matching data is found
@@ -26,10 +44,7 @@ open class CreditCardScannerViewController: UIViewController {
     // MARK: - Vision-related
     public lazy var request = VNRecognizeTextRequest(completionHandler: recognizeTextHandler)
 
-    public var finalMatch: (cardNumber: String?, name: String?, date: String?)
-    public var matches: [Match: Int]  = [:]// int is count
-    public enum MatchKind: Hashable { case cardNumber, name, date }
-    public struct Match: Hashable { let kind: MatchKind; let string: String }
+    private weak var delegate: CreditCardScannerViewControllerDelegate? // TODO: pass in initializer
 
     // MARK: - Capture related
     private var captureDevice: AVCaptureDevice?
@@ -63,7 +78,9 @@ open class CreditCardScannerViewController: UIViewController {
     /// Vision -> AVF coordinate transform.
     private var visionToAVFTransform = CGAffineTransform.identity
 
-    public init() {
+    public init(delegate: CreditCardScannerViewControllerDelegate) {
+        self.delegate = delegate
+
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -161,7 +178,7 @@ private extension CreditCardScannerViewController {
 
 
     @objc func takePhoto() {
-        var photoSettings = AVCapturePhotoSettings()
+        let photoSettings = AVCapturePhotoSettings()
         photoSettings.isHighResolutionPhotoEnabled = true
 //        videoDataOutput
 
@@ -205,19 +222,24 @@ private extension CreditCardScannerViewController {
 //        ])
     }
 
+    func callErrorDelegate(kind: CreditCardScannerError.Kind, underlyingError: Error? = nil) {
+        delegate?.creditCardScannerViewController(self, didErrorWith: .init(kind: .cameraSetup, underlyingError: underlyingError))
+    }
+
     func setupCamera() {
         captureSession.beginConfiguration()
         captureSession.sessionPreset = .photo
 
         do {
             guard let videoDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
-                // TODO: error
+                DispatchQueue.main.async { [weak self] in self?.callErrorDelegate(kind: .cameraSetup )}
                 return
             }
 
             let deviceInput = try AVCaptureDeviceInput(device: videoDevice)
             guard captureSession.canAddInput(deviceInput) else {
                 // TODO: call some error delegate or completion handler here?
+                DispatchQueue.main.async { [weak self] in self?.callErrorDelegate(kind: .cameraSetup )}
                 return
             }
 
@@ -237,7 +259,7 @@ private extension CreditCardScannerViewController {
 
 
             guard captureSession.canAddOutput(photoOutput) else {
-                // TODO: call some error delegate or completion handler here?
+                DispatchQueue.main.async { [weak self] in self?.callErrorDelegate(kind: .cameraSetup )}
                 return
             }
 
@@ -249,7 +271,8 @@ private extension CreditCardScannerViewController {
             captureSession.commitConfiguration()
 
         } catch {
-            // TODO: call some error delegate or completion handler here
+            DispatchQueue.main.async { [weak self] in self?.callErrorDelegate(kind: .cameraSetup, underlyingError: error) }
+            // TODO: cleanup here
         }
     }
 
@@ -347,48 +370,64 @@ private extension CreditCardScannerViewController {
 
         // too narrow (more spaces???)
 //        let creditCardNumber: Regex = #"^(?:4[0-9]{12}(?:[0-9]{3})?|[25][1-7][0-9]{14}|6(?:011|5[0-9][0-9])[0-9]{12}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|(?:2131|1800|35\d{3})\d{11})$"#
-        let creditCardNumber = #"\d{4}\h+\d{4}\h+\d{4}\h+\d{4}"#
-        // too narrow
-        let date = #"\d{2}\/\d{2}"#
-        // too broad
+        let creditCardNumber = #"(\d{4}\h+\d{4}\h+\d{4}\h+\d{4})"#
+        let twoDigits = #"(\d{2})"#
+        let date = twoDigits + #"\/"# + twoDigits
         // mrs, mr
-        let name = #"^[A-z]{2,}\h([A-z.]+\h)?[A-z]{2,}$"# // TODO: also filter out keywords: Mastercard,JCB,Visa,Express,bank,card,,platinum,card,rewards
+        let wordsToSkip = ["mastercard", "jcb", "visa", "express", "bank",/* "card", */"platinum", "reward"] // TODO: add `card` back in
+        // These may be contained in the date strings, so ignore them only for names
+        let invalidNames = ["expiration", "valid", "since", "from", "until", "month", "year"]
+        let name = #"([A-z]{2,}\h([A-z.]+\h)?[A-z]{2,})"#
         // TODO: strip these words? valid,thru,expiration
 
         guard let results = request.results as? [VNRecognizedTextObservation] else { return }
 
+        var creditCard = CreditCard(number: nil, name: nil, date: nil)
+
         let maxCandidates = 1
         for result in results { // TODO: process text here
-            guard let candidate = result.topCandidates(maxCandidates).first, candidate.confidence > 0.1 else { continue }
-//            print(candidate.string)
+            guard
+                let candidate = result.topCandidates(maxCandidates).first,
+                candidate.confidence > 0.1
+            else { continue }
 
             // TODO: grab entire candidate string, then search inside it for matching regexes
             // the reason being that cards have prefixes like `Valid Through` etc
             let string = candidate.string
+            print(string)
 
-            if string =~ Regex(creditCardNumber) {
-                print("cardNumber: " + string)
-                finalMatch.cardNumber = string
+            let containsWordToSkip = wordsToSkip.contains { string.lowercased().contains($0) }
+            if containsWordToSkip { print(string + " was skipped"); continue }
+
+            if string == "12/20" {
+                print("here")
+            }
+
+            if let cardNumber = Regex(creditCardNumber).firstMatch(in: string) {
+                print("cardNumber: " + cardNumber)
+                creditCard.number = cardNumber
 
             } else if string =~ Regex(date) {
-                print("Date: " + string)
-                finalMatch.date = string
+                let matches = Regex(twoDigits).matches(in: string)
+                let month = matches.first.flatMap(Int.init)
+                let year = matches.last.flatMap(Int.init)
+                print("Date: " + DateComponents(year: year, month: month).description)
+                creditCard.date = DateComponents(year: year, month: month)
 
-            } else if string =~ Regex(name){
-                print("Name: " + string)
-                finalMatch.name = string
+            } else if let name = Regex(name).firstMatch(in: string) {
+                let containsInvalidName = invalidNames.contains { name.lowercased().contains($0)}
+                if containsInvalidName { print("Invalid name" + name); continue }
+                print("Name: " + name)
+                creditCard.name = name
 
             } else {
                 continue
             }
-
-            if let cardNumber = finalMatch.cardNumber, let name = finalMatch.name, let date = finalMatch.date {
-                showMatches(string: [cardNumber, name, date].joined(separator: "\n"))
-            }
         }
 
         DispatchQueue.main.async { [weak self] in
-            self?.show(boxes: greenBoxes, color: UIColor.green.cgColor)
+            guard let strongSelf = self else { return }
+            self?.delegate?.creditCardScannerViewController(strongSelf, didFinishWith: creditCard)
         }
     }
 
@@ -434,14 +473,12 @@ private extension CreditCardScannerViewController {
 extension CreditCardScannerViewController: AVCapturePhotoCaptureDelegate {
     public func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
         if let error = error {
-            // TODO: error
-            fatalError()
+            DispatchQueue.main.async { [weak self] in self?.callErrorDelegate(kind: .photoProcessing, underlyingError: error) }
             return
         }
 
         guard let photoData = photo.fileDataRepresentation() else {
-            // TODO: error
-            fatalError()
+            DispatchQueue.main.async { [weak self] in self?.callErrorDelegate(kind: .photoProcessing) }
             return
         }
 
@@ -463,8 +500,7 @@ extension CreditCardScannerViewController: AVCapturePhotoCaptureDelegate {
         do {
             try requestHandler.perform([request])
         } catch {
-            fatalError()
-            // TODO: error handling
+            DispatchQueue.main.async { [weak self] in self?.callErrorDelegate(kind: .photoProcessing, underlyingError: error) }
         }
     }
 }
