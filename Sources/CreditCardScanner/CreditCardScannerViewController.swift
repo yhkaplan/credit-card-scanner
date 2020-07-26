@@ -36,8 +36,12 @@ open class CreditCardScannerViewController: UIViewController {
     open var cutoutView = UIView()
     /// Mask layer that covering area around camera view
     open var maskLayer = CAShapeLayer()
-    /// Green boxes that appear when data matching that necessary appears
-    private var boxLayers: [CAShapeLayer] = []
+    /// The backgroundColor stack view that is below the camera preview view
+    open var bottomStackView = UIStackView()
+    open var titleLabel = UILabel()
+    open var subtitleLabel = UILabel()
+    open var cancelButton = UIButton()
+    open var takePhotoButton = UIButton()
 
     // MARK: - Vision-related
     public lazy var request = VNRecognizeTextRequest(completionHandler: recognizeTextHandler)
@@ -76,6 +80,8 @@ open class CreditCardScannerViewController: UIViewController {
     /// Vision -> AVF coordinate transform.
     private var visionToAVFTransform = CGAffineTransform.identity
 
+    open override var shouldAutorotate: Bool { false }
+
     public init(delegate: CreditCardScannerViewControllerDelegate) {
         self.delegate = delegate
 
@@ -94,10 +100,8 @@ open class CreditCardScannerViewController: UIViewController {
         // so that it exists when the first buffer is received.
         _ = request
 
-        let gesture = UITapGestureRecognizer(target: self, action: #selector(takePhoto))
-        cutoutView.addGestureRecognizer(gesture)
-
         layoutSubviews()
+        setupLabelsAndButtons()
 
         // Set up preview view.
         cameraView.session = captureSession
@@ -134,30 +138,6 @@ open class CreditCardScannerViewController: UIViewController {
         }
     }
 
-    // TODO: solve jitter during screen rotation
-    open override func viewWillTransition(
-        to size: CGSize,
-        with coordinator: UIViewControllerTransitionCoordinator
-    ) {
-        super.viewWillTransition(to: size, with: coordinator)
-
-        // Only change the current orientation if the new one is landscape or
-        // portrait. You can't really do anything about flat or unknown.
-        let deviceOrientation = UIDevice.current.orientation
-        if deviceOrientation.isPortrait || deviceOrientation.isLandscape {
-            currentOrientation = deviceOrientation
-        }
-
-        // Handle device orientation in the preview layer.
-        if let videoPreviewLayerConnection = cameraView.videoPreviewLayer.connection,
-            let newVideoOrientation = AVCaptureVideoOrientation(deviceOrientation: deviceOrientation) {
-            videoPreviewLayerConnection.videoOrientation = newVideoOrientation
-        }
-
-        // Orientation changed: figure out new region of interest (ROI).
-        calculateRegionOfInterest()
-    }
-
     open override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
 
@@ -167,8 +147,11 @@ open class CreditCardScannerViewController: UIViewController {
 
 private extension CreditCardScannerViewController {
 
+    @objc func cancel(_ sender: UIButton) {
+        delegate?.creditCardScannerViewControllerDidCancel(self)
+    }
 
-    @objc func takePhoto() {
+    @objc func takePhoto(_ sender: UIButton) {
         let photoSettings = AVCapturePhotoSettings()
         photoSettings.isHighResolutionPhotoEnabled = true
 //        videoDataOutput
@@ -183,27 +166,56 @@ private extension CreditCardScannerViewController {
 
     }
 
-    func layoutSubviews() {
+    func layoutSubviews() { // TODO: make open for customization?
         // TODO: test screen rotation cameraView, cutoutView
         cameraView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(cameraView)
         NSLayoutConstraint.activate([
-            cameraView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            cameraView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            // TODO: shoudl this be right to avoid fliping w/ Semitic language?
+            cameraView.topAnchor.constraint(equalTo: view.topAnchor),
+            cameraView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             cameraView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            cameraView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
 
         cutoutView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(cutoutView)
         NSLayoutConstraint.activate([
-            cutoutView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            cutoutView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            cutoutView.topAnchor.constraint(equalTo: view.topAnchor),
+            cutoutView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             // TODO: shoudl this be right to avoid fliping w/ Semitic language?
             cutoutView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            cutoutView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
+
+        bottomStackView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(bottomStackView)
+        NSLayoutConstraint.activate([
+            bottomStackView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            bottomStackView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            bottomStackView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+            bottomStackView.heightAnchor.constraint(equalToConstant: 360.0),
+
+            cameraView.bottomAnchor.constraint(equalTo: bottomStackView.topAnchor),
+            cutoutView.bottomAnchor.constraint(equalTo: bottomStackView.topAnchor),
+        ])
+
+        bottomStackView.axis = .vertical
+        bottomStackView.spacing = 16.0
+        bottomStackView.isLayoutMarginsRelativeArrangement = true
+        bottomStackView.directionalLayoutMargins = .init(top: 8.0, leading: 8.0, bottom: 8.0, trailing: 8.0)
+        let arrangedSubviews: [UIView] = [titleLabel, subtitleLabel, UIView(), cancelButton, takePhotoButton]
+        arrangedSubviews.forEach(bottomStackView.addArrangedSubview)
+    }
+
+    func setupLabelsAndButtons() {
+        titleLabel.text = "Add card"
+        titleLabel.textAlignment = .center
+        titleLabel.font = .preferredFont(forTextStyle: .title1)
+        subtitleLabel.text = "Line up card within the lines"
+        subtitleLabel.textAlignment = .center
+        subtitleLabel.font = .preferredFont(forTextStyle: .title3)
+        cancelButton.setTitle("Cancel", for: .normal)
+        cancelButton.addTarget(self, action: #selector(cancel), for: .touchUpInside)
+        takePhotoButton.setTitle("Scan Card", for: .normal)
+        takePhotoButton.addTarget(self, action: #selector(takePhoto), for: .touchUpInside)
     }
 
     func callErrorDelegate(kind: CreditCardScannerError.Kind, underlyingError: Error? = nil) {
@@ -285,25 +297,13 @@ private extension CreditCardScannerViewController {
     }
 
     func calculateRegionOfInterestSize() -> CGSize {
-        // In landscape orientation the desired ROI is specified as the ratio of
-        // buffer width to height. When the UI is rotated to portrait, keep the
-        // vertical size the same (in buffer pixels). Also try to keep the
-        // horizontal size the same up to a maximum ratio.
-
         let maxPortraitWidth = 0.9
-        let desiredRatio: (height: Double, width: Double) = currentOrientation.isPortrait
-            ? (height: 0.55, width: 0.7)
-            : (height: 0.75, width: 0.7)
+        let desiredRatio: (height: Double, width: Double) = (height: 0.65, width: 0.7)
 
-        switch currentOrientation {
-        case .portrait, .portraitUpsideDown, .unknown: // TODO: is portraitUpsideDown correct?
-            let width = min(desiredRatio.width * bufferAspectRatio, maxPortraitWidth)
-            let height = desiredRatio.height / bufferAspectRatio
-            return CGSize(width: width, height: height)
+        let width = min(desiredRatio.width * bufferAspectRatio, maxPortraitWidth)
+        let height = desiredRatio.height / bufferAspectRatio
 
-        default:
-            return CGSize(width: desiredRatio.width, height: desiredRatio.height)
-        }
+        return CGSize(width: width, height: height)
     }
 
     /// Recalculate the affine transform between Vision coordinates and AVF coordinates.
