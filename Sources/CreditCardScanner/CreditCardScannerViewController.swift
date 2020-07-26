@@ -103,10 +103,10 @@ open class CreditCardScannerViewController: UIViewController {
         cameraView.session = captureSession
 
         // Set up cutout view.
-//        cutoutView.backgroundColor = UIColor.gray.withAlphaComponent(0.6)
-//        maskLayer.backgroundColor = UIColor.clear.cgColor
-//        maskLayer.fillRule = .evenOdd
-//        cutoutView.layer.mask = maskLayer
+        cutoutView.backgroundColor = UIColor.gray.withAlphaComponent(0.6)
+        maskLayer.backgroundColor = UIColor.clear.cgColor
+        maskLayer.fillRule = .evenOdd
+        cutoutView.layer.mask = maskLayer
 
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized: break
@@ -229,6 +229,10 @@ private extension CreditCardScannerViewController {
 
             captureSession.addInput(deviceInput)
             self.deviceInput = deviceInput
+
+            // Set aspect ratio (used in ROI calculation)
+            let dimensions = videoDevice.activeFormat.highResolutionStillImageDimensions
+            bufferAspectRatio = Double(dimensions.width) / Double(dimensions.height)
 
             DispatchQueue.main.async { [weak self] in
                 var initialVideoOrientation: AVCaptureVideoOrientation = .portrait
@@ -417,7 +421,7 @@ extension CreditCardScannerViewController: AVCapturePhotoCaptureDelegate {
         // makes recognition slower.
         request.usesLanguageCorrection = false
         // Only run on the region of interest for maximum speed.
-        // request.regionOfInterest = regionOfInterest // TODO: incorrect
+        request.regionOfInterest = regionOfInterest
 
         let requestHandler = VNImageRequestHandler(
             data: photoData,
