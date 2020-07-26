@@ -17,7 +17,7 @@ open class CreditCardScannerViewController: UIViewController {
     /// View representing the cutout rectangle to align card with
     open var cutoutView = UIView()
     /// View that appears when matching data is found
-    open var dataView = UILabel() // TODO: rename to dataLabel?
+//    open var dataView = UILabel() // TODO: rename to dataLabel?
     /// Mask layer that covering area around camera view
     open var maskLayer = CAShapeLayer()
     /// Green boxes that appear when data matching that necessary appears
@@ -38,10 +38,8 @@ open class CreditCardScannerViewController: UIViewController {
         label: "com.yhkaplan.credit-card-scanner.captureSessionQueue"
     )
 
-    private let videoDataOutput = AVCaptureVideoDataOutput() // use AVCapturePhotoOutput?
-    private let videoDataOutputQueue = DispatchQueue(
-        label: "com.yhkaplan.credit-card-scanner.videoDataOutputSessionQueue"
-    )
+    @objc private dynamic var deviceInput: AVCaptureDeviceInput!
+    private let photoOutput = AVCapturePhotoOutput()
 
     // MARK: - Region of interest and text orientation
     /// Region of video data output buffer that recognition should be run on.
@@ -74,12 +72,6 @@ open class CreditCardScannerViewController: UIViewController {
         fatalError("Not implemented")
     }
 
-    @objc func takePhoto() {
-        var photoSettings = AVCapturePhotoSettings()
-        photoSettings.isHighResolutionPhotoEnabled = true
-//        videoDataOutput
-    }
-
     open override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -90,12 +82,12 @@ open class CreditCardScannerViewController: UIViewController {
         let gesture = UITapGestureRecognizer(target: self, action: #selector(takePhoto))
         cutoutView.addGestureRecognizer(gesture)
 
-        dataView.font = .monospacedSystemFont(ofSize: 30.0, weight: .regular)
-        dataView.backgroundColor = .white
-        dataView.textColor = .black
-        dataView.isHidden = true
-        dataView.textAlignment = .center
-        dataView.numberOfLines = 0
+//        dataView.font = .monospacedSystemFont(ofSize: 30.0, weight: .regular)
+//        dataView.backgroundColor = .white
+//        dataView.textColor = .black
+//        dataView.isHidden = true
+//        dataView.textAlignment = .center
+//        dataView.numberOfLines = 0
 
         layoutSubviews()
 
@@ -103,10 +95,15 @@ open class CreditCardScannerViewController: UIViewController {
         cameraView.session = captureSession
 
         // Set up cutout view.
-        cutoutView.backgroundColor = UIColor.gray.withAlphaComponent(0.6)
-        maskLayer.backgroundColor = UIColor.clear.cgColor
-        maskLayer.fillRule = .evenOdd
-        cutoutView.layer.mask = maskLayer
+//        cutoutView.backgroundColor = UIColor.gray.withAlphaComponent(0.6)
+//        maskLayer.backgroundColor = UIColor.clear.cgColor
+//        maskLayer.fillRule = .evenOdd
+//        cutoutView.layer.mask = maskLayer
+
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized: break
+        default: fatalError()
+        }
 
         // Starting the capture session is a blocking call. Perform setup using
         // a dedicated serial dispatch queue to prevent blocking the main thread.
@@ -118,6 +115,14 @@ open class CreditCardScannerViewController: UIViewController {
                 // Figure out initial ROI.
                 self?.calculateRegionOfInterest()
             }
+        }
+    }
+
+    open override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        captureSessionQueue.async { [weak self] in
+            self?.captureSession.startRunning()
         }
     }
 
@@ -153,6 +158,23 @@ open class CreditCardScannerViewController: UIViewController {
 }
 
 private extension CreditCardScannerViewController {
+
+
+    @objc func takePhoto() {
+        var photoSettings = AVCapturePhotoSettings()
+        photoSettings.isHighResolutionPhotoEnabled = true
+//        videoDataOutput
+
+        captureSessionQueue.async { [weak self] in
+            guard let strongSelf = self else { return }
+            let settings = AVCapturePhotoSettings()
+            settings.isHighResolutionPhotoEnabled = true
+            settings.photoQualityPrioritization = .quality
+            self?.photoOutput.capturePhoto(with: settings, delegate: strongSelf) // TODO: does this work?
+        }
+
+    }
+
     func layoutSubviews() {
         // TODO: test screen rotation cameraView, cutoutView, dataView
         cameraView.translatesAutoresizingMaskIntoConstraints = false
@@ -175,79 +197,60 @@ private extension CreditCardScannerViewController {
             cutoutView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
 
-        dataView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(dataView)
-        NSLayoutConstraint.activate([
-            dataView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            dataView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-        ])
+//        dataView.translatesAutoresizingMaskIntoConstraints = false
+//        view.addSubview(dataView)
+//        NSLayoutConstraint.activate([
+//            dataView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+//            dataView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+//        ])
     }
 
     func setupCamera() {
-        guard let captureDevice = AVCaptureDevice.default(
-            .builtInWideAngleCamera,
-            for: .video,
-            position: .back
-        ) else {
-            // TODO: call some error delegate or completion handler here
-            return
-        }
-
-        self.captureDevice = captureDevice
-
-        if captureDevice.supportsSessionPreset(.hd4K3840x2160) {
-            captureSession.sessionPreset = .hd4K3840x2160
-            bufferAspectRatio = 3840.0 / 2160.0
-        } else {
-            captureSession.sessionPreset = .hd1920x1080
-            bufferAspectRatio = 1920.0 / 1080.0
-        }
+        captureSession.beginConfiguration()
+        captureSession.sessionPreset = .photo
 
         do {
-            let deviceInput = try AVCaptureDeviceInput(device: captureDevice)
+            guard let videoDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
+                // TODO: error
+                return
+            }
+
+            let deviceInput = try AVCaptureDeviceInput(device: videoDevice)
             guard captureSession.canAddInput(deviceInput) else {
                 // TODO: call some error delegate or completion handler here?
                 return
             }
 
             captureSession.addInput(deviceInput)
-            setupVideoDataOutput()
+            self.deviceInput = deviceInput
 
-            guard captureSession.canAddOutput(videoDataOutput) else {
+            DispatchQueue.main.async { [weak self] in
+                var initialVideoOrientation: AVCaptureVideoOrientation = .portrait
+                if let deviceOrientation = self?.currentOrientation,
+                    deviceOrientation != .unknown,
+                    let videoOrientation = AVCaptureVideoOrientation(deviceOrientation: deviceOrientation) {
+                    initialVideoOrientation = videoOrientation
+                }
+
+                self?.cameraView.videoPreviewLayer.connection?.videoOrientation = initialVideoOrientation
+            }
+
+
+            guard captureSession.canAddOutput(photoOutput) else {
                 // TODO: call some error delegate or completion handler here?
                 return
             }
 
-            captureSession.addOutput(videoDataOutput)
+            captureSession.addOutput(photoOutput)
 
-            // NOTE:
-            // There is a trade-off to be made here. Enabling stabilization will
-            // give temporally more stable results and should help the recognizer
-            // converge. But if it's enabled the VideoDataOutput buffers don't
-            // match what's displayed on screen, which makes drawing bounding
-            // boxes very hard. Disable it in this app to allow drawing detected
-            // bounding boxes on screen.
-            let videoOutputConnection = videoDataOutput.connection(with: .video)
-            videoOutputConnection?.preferredVideoStabilizationMode = .off
+            photoOutput.isHighResolutionCaptureEnabled = true
+            photoOutput.maxPhotoQualityPrioritization = .quality
 
-            try captureDevice.lockForConfiguration()
-            captureDevice.videoZoomFactor = 2
-            captureDevice.autoFocusRangeRestriction = .near
-            captureDevice.unlockForConfiguration()
-
-            captureSession.startRunning()
+            captureSession.commitConfiguration()
 
         } catch {
             // TODO: call some error delegate or completion handler here
         }
-    }
-
-    func setupVideoDataOutput() {
-        videoDataOutput.alwaysDiscardsLateVideoFrames = true
-        videoDataOutput.setSampleBufferDelegate(self, queue: videoDataOutputQueue)
-        videoDataOutput.videoSettings = [
-            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
-        ]
     }
 
     func calculateRegionOfInterest() {
@@ -333,9 +336,9 @@ private extension CreditCardScannerViewController {
         maskLayer.path = path.cgPath
 
         // Move the number view down below the cutout
-        var numFrame = cutout
-        numFrame.origin.y += numFrame.size.height
-        dataView.frame = numFrame
+//        var numFrame = cutout
+//        numFrame.origin.y += numFrame.size.height
+//        dataView.frame = numFrame
     }
 
     func recognizeTextHandler(request: VNRequest, error: Error?) {
@@ -349,78 +352,34 @@ private extension CreditCardScannerViewController {
         let date = #"\d{2}\/\d{2}"#
         // too broad
         // mrs, mr
-        let name = #"^[A-z]{2,}\h([A-z.]+\h)?[A-z]{2,}$"# // TODO: also filter out keywords: Mastercard,JCB,Visa,Express,bank,card
+        let name = #"^[A-z]{2,}\h([A-z.]+\h)?[A-z]{2,}$"# // TODO: also filter out keywords: Mastercard,JCB,Visa,Express,bank,card,,platinum,card,rewards
+        // TODO: strip these words? valid,thru,expiration
 
         guard let results = request.results as? [VNRecognizedTextObservation] else { return }
 
         let maxCandidates = 1
         for result in results { // TODO: process text here
             guard let candidate = result.topCandidates(maxCandidates).first, candidate.confidence > 0.1 else { continue }
+//            print(candidate.string)
 
             // TODO: grab entire candidate string, then search inside it for matching regexes
             // the reason being that cards have prefixes like `Valid Through` etc
             let string = candidate.string
 
             if string =~ Regex(creditCardNumber) {
-                let match = Match(kind: .cardNumber, string: string)
-                if let count = matches[match] {
-                    matches[match] = count + 1
-                } else {
-                    matches[match] = 1
-                }
+                print("cardNumber: " + string)
+                finalMatch.cardNumber = string
 
-                if matches[match] ?? 0 >= 1 {
-                    print("Num: " + candidate.string)
-                    finalMatch.cardNumber = string
-                }
             } else if string =~ Regex(date) {
-                let match = Match(kind: .date, string: string)
-                if let count = matches[match] {
-                    matches[match] = count + 1
-                } else {
-                    matches[match] = 1
-                }
+                print("Date: " + string)
+                finalMatch.date = string
 
-                if matches[match] ?? 0 >= 10 {
-                    print("Date: " + string)
-                    finalMatch.date = string
-                }
-            } else if string =~ Regex(name) {
-                let match = Match(kind: .name, string: string)
-                if let count = matches[match] {
-                    matches[match] = count + 1
-                } else {
-                    matches[match] = 1
-                }
+            } else if string =~ Regex(name){
+                print("Name: " + string)
+                finalMatch.name = string
 
-                if matches[match] ?? 0 >= 10 {
-                    print("Name: " + string)
-                    finalMatch.name = string
-                }
             } else {
-                return
-            }
-
-            let range1 = string.range(of: creditCardNumber, options: .regularExpression, range: nil, locale: nil)
-            let range2 = string.range(of: name, options: .regularExpression, range: nil, locale: nil)
-            let range3 = string.range(of: date, options: .regularExpression, range: nil, locale: nil)
-//            let range = candidate.string.range(of: candidate.string)!
-            /* TODO: bounding box for range is tiny so range is prob off or something...
-             ▿ Optional<CGRect>
-             ▿ some : (0.37872559095580677, 0.09671993271656865, 0.2091469681397739, 0.08158116063919252)
-               ▿ origin : (0.37872559095580677, 0.09671993271656865)
-                 - x : 0.37872559095580677
-                 - y : 0.09671993271656865
-               ▿ size : (0.2091469681397739, 0.08158116063919252)
-                 - width : 0.2091469681397739
-                 - height : 0.08158116063919252
-             */
-            if let range1 = range1, let box = try? candidate.boundingBox(for: range1)?.boundingBox { // TODO: bounding box not working?
-                greenBoxes.append(box)
-            } else if let range2 = range2, let box = try? candidate.boundingBox(for: range2)?.boundingBox {
-                greenBoxes.append(box)
-            } else if let range3 = range3, let box = try? candidate.boundingBox(for: range3)?.boundingBox {
-               greenBoxes.append(box)
+                continue
             }
 
             if let cardNumber = finalMatch.cardNumber, let name = finalMatch.name, let date = finalMatch.date {
@@ -440,8 +399,8 @@ private extension CreditCardScannerViewController {
         captureSessionQueue.sync { [weak self] in
             self?.captureSession.stopRunning()
             DispatchQueue.main.async { [weak self] in
-                self?.dataView.text = string
-                self?.dataView.isHidden = false
+//                self?.dataView.text = string
+//                self?.dataView.isHidden = false
             }
         }
     }
@@ -472,24 +431,31 @@ private extension CreditCardScannerViewController {
     }
 }
 
-extension CreditCardScannerViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
-    public func captureOutput(
-        _ output: AVCaptureOutput,
-        didOutput sampleBuffer: CMSampleBuffer,
-        from connection: AVCaptureConnection
-    ) {
-        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+extension CreditCardScannerViewController: AVCapturePhotoCaptureDelegate {
+    public func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
+        if let error = error {
+            // TODO: error
+            fatalError()
+            return
+        }
+
+        guard let photoData = photo.fileDataRepresentation() else {
+            // TODO: error
+            fatalError()
+            return
+        }
+
         // Configure for running in real-time.
-        request.recognitionLevel = .fast // TODO: use photo or another thread?
+        request.recognitionLevel = .accurate // TODO: use photo or another thread?
 
         // Language correction won't help recognizing credit card info. It also
         // makes recognition slower.
         request.usesLanguageCorrection = false
         // Only run on the region of interest for maximum speed.
-        request.regionOfInterest = regionOfInterest
+        // request.regionOfInterest = regionOfInterest // TODO: incorrect
 
         let requestHandler = VNImageRequestHandler(
-            cvPixelBuffer: pixelBuffer,
+            data: photoData,
             orientation: textOrientation,
             options: [:]
         )
@@ -497,6 +463,7 @@ extension CreditCardScannerViewController: AVCaptureVideoDataOutputSampleBufferD
         do {
             try requestHandler.perform([request])
         } catch {
+            fatalError()
             // TODO: error handling
         }
     }
