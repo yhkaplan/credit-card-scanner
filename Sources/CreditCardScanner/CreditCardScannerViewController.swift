@@ -34,8 +34,6 @@ open class CreditCardScannerViewController: UIViewController {
     private let cameraView = CameraView()
     /// View representing the cutout rectangle to align card with
     open var cutoutView = UIView()
-    /// View that appears when matching data is found
-//    open var dataView = UILabel() // TODO: rename to dataLabel?
     /// Mask layer that covering area around camera view
     open var maskLayer = CAShapeLayer()
     /// Green boxes that appear when data matching that necessary appears
@@ -98,13 +96,6 @@ open class CreditCardScannerViewController: UIViewController {
 
         let gesture = UITapGestureRecognizer(target: self, action: #selector(takePhoto))
         cutoutView.addGestureRecognizer(gesture)
-
-//        dataView.font = .monospacedSystemFont(ofSize: 30.0, weight: .regular)
-//        dataView.backgroundColor = .white
-//        dataView.textColor = .black
-//        dataView.isHidden = true
-//        dataView.textAlignment = .center
-//        dataView.numberOfLines = 0
 
         layoutSubviews()
 
@@ -193,7 +184,7 @@ private extension CreditCardScannerViewController {
     }
 
     func layoutSubviews() {
-        // TODO: test screen rotation cameraView, cutoutView, dataView
+        // TODO: test screen rotation cameraView, cutoutView
         cameraView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(cameraView)
         NSLayoutConstraint.activate([
@@ -213,13 +204,6 @@ private extension CreditCardScannerViewController {
             cutoutView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             cutoutView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
-
-//        dataView.translatesAutoresizingMaskIntoConstraints = false
-//        view.addSubview(dataView)
-//        NSLayoutConstraint.activate([
-//            dataView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-//            dataView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-//        ])
     }
 
     func callErrorDelegate(kind: CreditCardScannerError.Kind, underlyingError: Error? = nil) {
@@ -357,27 +341,18 @@ private extension CreditCardScannerViewController {
         let path = UIBezierPath(rect: cutoutView.frame)
         path.append(.init(rect: cutout))
         maskLayer.path = path.cgPath
-
-        // Move the number view down below the cutout
-//        var numFrame = cutout
-//        numFrame.origin.y += numFrame.size.height
-//        dataView.frame = numFrame
     }
 
     func recognizeTextHandler(request: VNRequest, error: Error?) {
-        var data: [String] = []
-        var greenBoxes: [CGRect] = [] // Shows words that might be serials
-
-        // too narrow (more spaces???)
 //        let creditCardNumber: Regex = #"^(?:4[0-9]{12}(?:[0-9]{3})?|[25][1-7][0-9]{14}|6(?:011|5[0-9][0-9])[0-9]{12}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|(?:2131|1800|35\d{3})\d{11})$"#
-        let creditCardNumber = #"(\d{4}\h+\d{4}\h+\d{4}\h+\d{4})"#
+        let creditCardNumber: Regex = #"(\d{4}\h+\d{4}\h+\d{4}\h+\d{4})"#
         let twoDigits = #"(\d{2})"#
-        let date = twoDigits + #"\/"# + twoDigits
+        let date = Regex(twoDigits + #"\/"# + twoDigits)
         // mrs, mr
         let wordsToSkip = ["mastercard", "jcb", "visa", "express", "bank",/* "card", */"platinum", "reward"] // TODO: add `card` back in
         // These may be contained in the date strings, so ignore them only for names
         let invalidNames = ["expiration", "valid", "since", "from", "until", "month", "year"]
-        let name = #"([A-z]{2,}\h([A-z.]+\h)?[A-z]{2,})"#
+        let name: Regex = #"([A-z]{2,}\h([A-z.]+\h)?[A-z]{2,})"#
         // TODO: strip these words? valid,thru,expiration
 
         guard let results = request.results as? [VNRecognizedTextObservation] else { return }
@@ -391,33 +366,23 @@ private extension CreditCardScannerViewController {
                 candidate.confidence > 0.1
             else { continue }
 
-            // TODO: grab entire candidate string, then search inside it for matching regexes
-            // the reason being that cards have prefixes like `Valid Through` etc
             let string = candidate.string
-            print(string)
 
             let containsWordToSkip = wordsToSkip.contains { string.lowercased().contains($0) }
-            if containsWordToSkip { print(string + " was skipped"); continue }
+            if containsWordToSkip { continue }
 
-            if string == "12/20" {
-                print("here")
-            }
-
-            if let cardNumber = Regex(creditCardNumber).firstMatch(in: string) {
-                print("cardNumber: " + cardNumber)
+            if let cardNumber = creditCardNumber.firstMatch(in: string) {
                 creditCard.number = cardNumber
 
-            } else if string =~ Regex(date) {
+            } else if string =~ date {
                 let matches = Regex(twoDigits).matches(in: string)
                 let month = matches.first.flatMap(Int.init)
                 let year = matches.last.flatMap(Int.init)
-                print("Date: " + DateComponents(year: year, month: month).description)
                 creditCard.date = DateComponents(year: year, month: month)
 
-            } else if let name = Regex(name).firstMatch(in: string) {
+            } else if let name = name.firstMatch(in: string) {
                 let containsInvalidName = invalidNames.contains { name.lowercased().contains($0)}
-                if containsInvalidName { print("Invalid name" + name); continue }
-                print("Name: " + name)
+                if containsInvalidName { continue }
                 creditCard.name = name
 
             } else {
@@ -431,43 +396,6 @@ private extension CreditCardScannerViewController {
         }
     }
 
-    func showMatches(string: String) {
-        // Found a definite match.
-        // Stop the camera synchronously to ensure that no further buffers are
-        // received. Then update the number view asynchronously.
-        captureSessionQueue.sync { [weak self] in
-            self?.captureSession.stopRunning()
-            DispatchQueue.main.async { [weak self] in
-//                self?.dataView.text = string
-//                self?.dataView.isHidden = false
-            }
-        }
-    }
-
-    func show(boxes: [CGRect], color: CGColor) {
-        let layer = cameraView.videoPreviewLayer
-        removeBoxes()
-        boxes.forEach { box in
-            let metadataOutputRect = box.applying(visionToAVFTransform)
-            let rect = layer.layerRectConverted(fromMetadataOutputRect: metadataOutputRect)
-            draw(rect: rect, color: color)
-        }
-    }
-
-    func draw(rect: CGRect, color: CGColor) {
-        let layer = CAShapeLayer()
-        layer.opacity = 0.5
-        layer.borderColor = color
-        layer.borderWidth = 1.0
-        layer.frame = rect
-        boxLayers.append(layer)
-        cameraView.videoPreviewLayer.insertSublayer(layer, at: 1)
-    }
-
-    func removeBoxes() {
-        boxLayers.forEach { $0.removeFromSuperlayer() }
-        boxLayers.removeAll()
-    }
 }
 
 extension CreditCardScannerViewController: AVCapturePhotoCaptureDelegate {
