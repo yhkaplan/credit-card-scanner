@@ -81,10 +81,13 @@ open class CreditCardScannerViewController: UIViewController {
     private var visionToAVFTransform = CGAffineTransform.identity
 
     open override var shouldAutorotate: Bool { false }
+    private let authorizedFailureHandler: (() -> Void)
 
-    public init(delegate: CreditCardScannerViewControllerDelegate) {
+    public init(delegate: CreditCardScannerViewControllerDelegate,
+                authorizedFailureHandler: @escaping (() -> Void) = { print("Please authorize") }
+                ) {
         self.delegate = delegate
-
+        self.authorizedFailureHandler = authorizedFailureHandler
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -112,22 +115,27 @@ open class CreditCardScannerViewController: UIViewController {
         maskLayer.fillRule = .evenOdd
         cutoutView.layer.mask = maskLayer
 
-        switch AVCaptureDevice.authorizationStatus(for: .video) {
-        case .authorized: break
-        default: fatalError()
-        }
 
-        // Starting the capture session is a blocking call. Perform setup using
-        // a dedicated serial dispatch queue to prevent blocking the main thread.
-        captureSessionQueue.async { [weak self] in
-            self?.setupCamera()
 
-            // Calculate region of interest now that the camera is setup.
-            DispatchQueue.main.async { [weak self] in
-                // Figure out initial ROI.
-                self?.calculateRegionOfInterest()
+        authorize { [weak self] isAuthorized in
+            guard isAuthorized else {
+                self?.authorizedFailureHandler()
+                return
+            }
+            // Starting the capture session is a blocking call. Perform setup using
+            // a dedicated serial dispatch queue to prevent blocking the main thread.
+            self?.captureSessionQueue.async { [weak self] in
+                self?.setupCamera()
+
+                // Calculate region of interest now that the camera is setup.
+                DispatchQueue.main.async { [weak self] in
+                    // Figure out initial ROI.
+                    self?.calculateRegionOfInterest()
+                }
             }
         }
+
+
     }
 
     open override func viewWillAppear(_ animated: Bool) {
@@ -146,6 +154,19 @@ open class CreditCardScannerViewController: UIViewController {
 }
 
 private extension CreditCardScannerViewController {
+
+    func authorize(completion: @escaping ((Bool) -> Void) ) {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized:
+            completion(true)
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .video, completionHandler: { granted in
+                completion(granted)
+            })
+        default:
+            completion(false)
+        }
+    }
 
     @objc func cancel(_ sender: UIButton) {
         delegate?.creditCardScannerViewControllerDidCancel(self)
