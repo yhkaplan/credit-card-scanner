@@ -47,9 +47,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, CreditCardScannerViewCo
     }
 
     // TOOD: move
-
     func creditCardScannerViewControllerDidCancel(_ viewController: CreditCardScannerViewController) {
-
+        print("cancel")
     }
 
     func creditCardScannerViewController(_ viewController: CreditCardScannerViewController, didErrorWith error: CreditCardScannerError) {
