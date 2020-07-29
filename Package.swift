@@ -1,5 +1,4 @@
 // swift-tools-version:5.2
-// The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
 
@@ -12,12 +11,13 @@ let package = Package(
             targets: ["CreditCardScanner"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/yhkaplan/Reg.git", from: "0.2.5"),
+        .package(url: "https://github.com/yhkaplan/Reg.git", from: "0.3.0"),
+        .package(url: "https://github.com/yhkaplan/Sukar.git", from: "0.1.0"),
     ],
     targets: [
         .target(
             name: "CreditCardScanner",
-            dependencies: ["Reg"]),
+            dependencies: ["Reg", "Sukar"]),
         .testTarget(
             name: "CreditCardScannerTests",
             dependencies: ["CreditCardScanner"]),
