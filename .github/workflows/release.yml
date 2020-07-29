@@ -1,0 +1,34 @@
+true:
+  push:
+    tags:
+      - v?[0-9]*
+name: 'Create Release'
+jobs:
+  build:
+    name: 'Create Release'
+    runs-on: macos-latest
+    steps:
+      - name: 'Check out code'
+        uses: actions/checkout@v1
+      - name: 'Generate Carthage-compatible framework'
+        run: "./bin/package_carthage_framework.sh\n"
+      - env:
+          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+        id: create_release
+        name: 'Create release'
+        uses: actions/create-release@v1
+        with:
+          draft: false
+          prerelease: true
+          release_name: '${{ github.ref }}'
+          tag_name: '${{ github.ref }}'
+      - env:
+          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+        id: upload-release-asset
+        name: 'Upload Carthage-compatible framework'
+        uses: actions/upload-release-asset@v1
+        with:
+          asset_content_type: application/zip
+          asset_name: time.framework.zip
+          asset_path: ./time.framework.zip
+          uplad_url: '${{ steps.create_release.outputs.upload_url }}'

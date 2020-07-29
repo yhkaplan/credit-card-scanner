@@ -1,0 +1,6 @@
+// Make static
+MACH_O_TYPE = staticlib
+// Static libs require debug info to be dwarf
+DEBUG_INFORMATION_FORMAT = dwarf
+// Prob not necessary for this proj, but for finding transitive deps
+FRAMEWORK_SEARCH_PATHS = $(inherited) ./Carthage/Build/iOS/**

@@ -37,10 +37,12 @@ extension ViewController: CreditCardScannerViewControllerDelegate {
 
 - In Xcode, add as Swift package with this URL: `https://github.com/yhkaplan/credit-card-scanner.git`
 
-### Carthage
+### Carthage (Experimental)
 
 - Add this to Cartfile: `github "yhkaplan/credit-card-scanner"`
-- Follow instructions on [Carthage README](https://github.com/Carthage/Carthage#if-youre-building-for-ios-tvos-or-watchos) for integration
+- Follow instructions on [Carthage README](https://github.com/Carthage/Carthage#if-youre-building-for-ios-tvos-or-watchos) for integration **without adding to copy files script**
+- This framework is build as a static one for Carthage, that's why it has the settings above
+- To build with Carthage yourself, run `swift package generate-xcodeproj` then run
 
 ### Cocoapods
 
