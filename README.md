@@ -79,6 +79,15 @@ class ViewController: UIViewController, CreditCardScannerViewControllerDelegate 
 }
 ```
 
+## Trying out the Example app
+
+```sh
+# Install xcodegen if not present
+$ brew install xcodegen
+# Generate project
+$ xcodegen
+```
+
 ## Alternatives
 
 ### Card.io

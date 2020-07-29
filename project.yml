@@ -1,0 +1,22 @@
+name: Example
+
+attributes:
+  LastSwiftUpdateCheck: 1020
+  LastTestingUpgradeCheck: 0600
+  LastUpgradeCheck: 1150
+
+options:
+  groupSortPosition: top
+
+packages:
+  CreditCardScanner:
+    path: ./
+
+targets:
+  Example:
+    productName: Example
+    sources: Example
+    type: application
+    platform: iOS
+    dependencies:
+      - package: CreditCardScanner
