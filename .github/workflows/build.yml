@@ -16,4 +16,4 @@ jobs:
     - name: Version
       run: swift --version
     - name: Build
-      run: swift build -v
+      run: make build
