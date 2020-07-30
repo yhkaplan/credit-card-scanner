@@ -7,9 +7,8 @@
 //
 
 import UIKit
-import CreditCardScanner
 
-class SceneDelegate: UIResponder, UIWindowSceneDelegate, CreditCardScannerViewControllerDelegate {
+class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
 
@@ -25,7 +24,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, CreditCardScannerViewCo
         // Use a UIHostingController as window root view controller.
         if let windowScene = scene as? UIWindowScene {
             let window = UIWindow(windowScene: windowScene)
-            window.rootViewController = CreditCardScannerViewController(delegate: self)
+            window.rootViewController = ExampleResultViewController()
             self.window = window
             window.makeKeyAndVisible()
         }
@@ -45,21 +44,5 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, CreditCardScannerViewCo
 
     func sceneDidEnterBackground(_ scene: UIScene) {
     }
-
-    // TOOD: move
-
-    func creditCardScannerViewControllerDidCancel(_ viewController: CreditCardScannerViewController) {
-
-    }
-
-    func creditCardScannerViewController(_ viewController: CreditCardScannerViewController, didErrorWith error: CreditCardScannerError) {
-        fatalError(error.errorDescription!)
-    }
-
-    func creditCardScannerViewController(_ viewController: CreditCardScannerViewController, didFinishWith card: CreditCard) {
-        print("\(card)")
-    }
-
-
 }
 
