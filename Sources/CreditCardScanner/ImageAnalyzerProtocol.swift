@@ -9,11 +9,11 @@ import Foundation
 import Vision
 import Reg
 
-protocol ImageAnalyzationManagerProtocol: AnyObject {
+protocol ImageAnalyzerProtocol: AnyObject {
     func didFinishAnalyzation(with result: Result<CreditCard, CreditCardScannerError>)
 }
 
-class ImageAnalyzationManager {
+class ImageAnalyzer {
 
     typealias PredictedCount = Int
     var predictedCardNumberDictionary: [String: PredictedCount] = [:]
@@ -23,8 +23,8 @@ class ImageAnalyzationManager {
     var predictedExpireDateDictionary: [DateComponents: PredictedCount] = [:]
     var electedExpireDate: DateComponents?
 
-    weak var delegate: ImageAnalyzationManagerProtocol?
-    init(delegate: ImageAnalyzationManagerProtocol) {
+    weak var delegate: ImageAnalyzer?
+    init(delegate: ImageAnalyzer) {
         self.delegate = delegate
     }
 
