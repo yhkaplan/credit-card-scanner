@@ -28,8 +28,6 @@ class ImageAnalyzer {
         self.delegate = delegate
     }
 
-    var startTime: TimeInterval?
-
     // MARK: - Vision-related
     public lazy var request = VNRecognizeTextRequest(completionHandler: requestHandler)
     func analyze(image: CGImage) {
