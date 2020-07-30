@@ -20,3 +20,6 @@ targets:
     platform: iOS
     dependencies:
       - package: CreditCardScanner
+    configFiles:
+      Debug: Example/Example.xcconfig
+      Release: Example/Example.xcconfig
