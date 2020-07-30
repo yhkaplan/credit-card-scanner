@@ -40,7 +40,7 @@ class ImageAnalyzer {
         do {
             try requestHandler.perform([request])
         } catch {
-            self.delegate?.didFinishAnalyzation(with: .failure(CreditCardScannerError(kind: .photoProcessing,
+            delegate?.didFinishAnalyzation(with: .failure(CreditCardScannerError(kind: .photoProcessing,
                                                                                       underlyingError: error)))
         }
     }
@@ -127,10 +127,7 @@ class ImageAnalyzer {
 
     func completeAnalyzation() {
         let elected = CreditCard(number: electedCardNumber, name: electedName, date: electedExpireDate)
-        DispatchQueue.main.async { [weak self] in
-            guard let strongSelf = self else { return }
-            strongSelf.delegate?.didFinishAnalyzation(with: .success(elected))
-        }
+        delegate?.didFinishAnalyzation(with: .success(elected))
     }
 
 }
