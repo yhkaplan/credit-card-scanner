@@ -71,6 +71,7 @@ open class CreditCardScannerViewController: UIViewController {
     open override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         cameraView.setupRegionOfInterest()
+        cameraView.startSession()
     }
 }
 

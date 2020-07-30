@@ -69,6 +69,14 @@ final class CameraView: UIView {
         AVCaptureVideoPreviewLayer.self
     }
 
+    func stopSession() {
+        videoSession?.stopRunning()
+    }
+
+    func startSession() {
+        videoSession?.startRunning()
+    }
+
     func setupCamera() {
         captureSessionQueue.async { [weak self] in
             self?._setupCamera()
@@ -113,7 +121,6 @@ final class CameraView: UIView {
 
         DispatchQueue.main.async { [weak self] in
             self?.videoSession = session
-            self?.videoSession?.startRunning()
         }
     }
 
