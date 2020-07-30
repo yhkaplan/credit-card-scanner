@@ -122,33 +122,54 @@ extension CreditCardScannerViewController: CameraViewDelegate {
     }
 
     internal func didError(with error: CreditCardScannerError) {
-        delegate?.creditCardScannerViewController(self, didErrorWith: error)
+        DispatchQueue.main.async {[weak self] in
+            guard let strongSelf = self else { return }
+            strongSelf.delegate?.creditCardScannerViewController(strongSelf, didErrorWith: error)
+            strongSelf.cameraView.stopSession()
+        }
     }
 }
 
 extension CreditCardScannerViewController: ImageAnalyzerProtocol {
     internal func didFinishAnalyzation(with result: Result<CreditCard, CreditCardScannerError>) {
+
         switch result {
         case .success(let creditCard):
-            delegate?.creditCardScannerViewController(self, didFinishWith: creditCard)
+            DispatchQueue.main.async {[weak self] in
+                guard let strongSelf = self else { return }
+                strongSelf.cameraView.stopSession()
+                strongSelf.delegate?.creditCardScannerViewController(strongSelf, didFinishWith: creditCard)
+            }
+
 
         case .failure(let error):
-            delegate?.creditCardScannerViewController(self, didErrorWith: error)
+            DispatchQueue.main.async {[weak self] in
+                guard let strongSelf = self else { return }
+                strongSelf.cameraView.stopSession()
+                strongSelf.delegate?.creditCardScannerViewController(strongSelf, didErrorWith: error)
+            }
         }
     }
 }
 
 extension AVCaptureDevice {
     static func authorize(authorizedHandler: @escaping ((Bool) -> Void) ) {
+
+        let mainThreadHandler: ((Bool) -> Void) = { isAuthorized in
+            DispatchQueue.main.async {
+                authorizedHandler(isAuthorized)
+            }
+        }
+
         switch authorizationStatus(for: .video) {
         case .authorized:
-            authorizedHandler(true)
+            mainThreadHandler(true)
         case .notDetermined:
             requestAccess(for: .video, completionHandler: { granted in
-                authorizedHandler(granted)
+                mainThreadHandler(granted)
             })
         default:
-            authorizedHandler(false)
+            mainThreadHandler(false)
         }
     }
 }
