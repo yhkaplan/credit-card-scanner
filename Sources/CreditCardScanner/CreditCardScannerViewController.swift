@@ -30,7 +30,7 @@ open class CreditCardScannerViewController: UIViewController {
     /// View representing live camera
     private lazy var cameraView: CameraView = CameraView(delegate: self)
     /// Analizer
-    lazy var analyzationManager = ImageAnalyzationManager(delegate: self)
+    lazy var analyzationManager = ImageAnalyzer(delegate: self)
 
     private weak var delegate: CreditCardScannerViewControllerDelegate?
 
@@ -126,7 +126,7 @@ extension CreditCardScannerViewController: CameraViewDelegate {
     }
 }
 
-extension CreditCardScannerViewController: ImageAnalyzationManagerProtocol {
+extension CreditCardScannerViewController: ImageAnalyzerProtocol {
     internal func didFinishAnalyzation(with result: Result<CreditCard, CreditCardScannerError>) {
         switch result {
         case .success(let creditCard):

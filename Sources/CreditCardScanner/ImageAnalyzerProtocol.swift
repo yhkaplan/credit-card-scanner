@@ -16,15 +16,15 @@ protocol ImageAnalyzerProtocol: AnyObject {
 class ImageAnalyzer {
 
     typealias PredictedCount = Int
-    var predictedCardNumberDictionary: [String: PredictedCount] = [:]
-    var electedCardNumber: String?
-    var predictedNameDictionary: [String: PredictedCount] = [:]
-    var electedName: String?
-    var predictedExpireDateDictionary: [DateComponents: PredictedCount] = [:]
-    var electedExpireDate: DateComponents?
+    private var predictedCardNumberDictionary: [String: PredictedCount] = [:]
+    private var electedCardNumber: String?
+    private var predictedNameDictionary: [String: PredictedCount] = [:]
+    private var electedName: String?
+    private var predictedExpireDateDictionary: [DateComponents: PredictedCount] = [:]
+    private var electedExpireDate: DateComponents?
 
-    weak var delegate: ImageAnalyzer?
-    init(delegate: ImageAnalyzer) {
+    private weak var delegate: ImageAnalyzerProtocol?
+    init(delegate: ImageAnalyzerProtocol) {
         self.delegate = delegate
     }
 
