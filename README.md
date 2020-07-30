@@ -104,6 +104,8 @@ $ xcodegen
 
 ## Credits/Inspiration
 
+@po-miyasaka contributed to much of the real-time video logic and layout, thanks!
+
 This project would not have been possible without Apple's [example project](https://developer.apple.com/documentation/vision/reading_phone_numbers_in_real_time) (used with permission under an MIT license) demonstrating Vision and AVFoundation and Apple's [other example project](https://developer.apple.com/documentation/avfoundation/cameras_and_media_capture/avcam_building_a_camera_app) demonstrating a fully-featured photo app (also used with permission under an MIT license)
 
 ## License
