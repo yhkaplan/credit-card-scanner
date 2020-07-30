@@ -53,6 +53,7 @@ open class CreditCardScannerViewController: UIViewController {
 
     open override func viewDidLoad() {
         super.viewDidLoad()
+        view.backgroundColor = .black
         AVCaptureDevice.authorize { [weak self] authoriazed in
             guard let strongSelf = self else {
                 return
