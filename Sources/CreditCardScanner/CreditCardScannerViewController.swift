@@ -55,6 +55,7 @@ open class CreditCardScannerViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .black
         AVCaptureDevice.authorize { [weak self] authoriazed in
+            // This is on the main thread.
             guard let strongSelf = self else {
                 return
             }
