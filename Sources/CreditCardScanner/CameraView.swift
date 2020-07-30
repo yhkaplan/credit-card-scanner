@@ -16,15 +16,17 @@ protocol CameraViewDelegate: AnyObject {
     func didError(with: CreditCardScannerError)
 }
 
-/// 解析しやすい形にCrop加工された画像を提供する
-/// AVFoundationの、UIにも依存した複雑な処理もここが担ってくれる。
-/// 画像の解析はしない。
 final class CameraView: UIView {
 
     weak var delegate: CameraViewDelegate?
     // MARK: - Capture related
     private let captureSessionQueue = DispatchQueue(
         label: "com.yhkaplan.credit-card-scanner.captureSessionQueue"
+    )
+
+    // MARK: - Capture related
+    private let sampleBufferQueue = DispatchQueue(
+        label: "com.yhkaplan.credit-card-scanner.sampleBufferQueue"
     )
     init(delegate: CameraViewDelegate){
         self.delegate = delegate
@@ -95,7 +97,7 @@ final class CameraView: UIView {
 
         let videoOutput = AVCaptureVideoDataOutput()
         videoOutput.alwaysDiscardsLateVideoFrames = true
-        videoOutput.setSampleBufferDelegate(self, queue: DispatchQueue.global())
+        videoOutput.setSampleBufferDelegate(self, queue: sampleBufferQueue)
 
         guard session.canAddOutput(videoOutput) else {
             delegate?.didError(with: CreditCardScannerError(kind: .cameraSetup))
@@ -115,7 +117,6 @@ final class CameraView: UIView {
         }
     }
 
-    /// please call after CameraView's size is decided.
     func setupRegionOfInterest() {
         guard regionOfInterest == nil else { return }
         /// Mask layer that covering area around camera view

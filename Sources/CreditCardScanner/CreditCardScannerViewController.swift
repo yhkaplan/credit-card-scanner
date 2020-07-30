@@ -24,7 +24,6 @@ public extension CreditCardScannerViewControllerDelegate where Self: UIViewContr
     }
 }
 
-/// CameraViewやAnalizationをやり取りするだけ
 open class CreditCardScannerViewController: UIViewController {
 
     // MARK: - Subviews and layers
