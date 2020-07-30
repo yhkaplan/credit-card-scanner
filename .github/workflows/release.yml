@@ -1,21 +1,21 @@
-true:
+on:
   push:
     tags:
       - v?[0-9]*
-name: 'Create Release'
+name: Create Release
 jobs:
   build:
-    name: 'Create Release'
+    name: Create Release
     runs-on: macos-latest
     steps:
-      - name: 'Check out code'
+      - name: Check out code
         uses: actions/checkout@v1
-      - name: 'Generate Carthage-compatible framework'
-        run: "./bin/package_carthage_framework.sh\n"
+      - name: Generate Carthage-compatible framework
+        run: ./bin/package_carthage_framework.sh
       - env:
           GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
         id: create_release
-        name: 'Create release'
+        name: Create release
         uses: actions/create-release@v1
         with:
           draft: false
@@ -25,7 +25,7 @@ jobs:
       - env:
           GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
         id: upload-release-asset
-        name: 'Upload Carthage-compatible framework'
+        name: Upload Carthage-compatible framework
         uses: actions/upload-release-asset@v1
         with:
           asset_content_type: application/zip
