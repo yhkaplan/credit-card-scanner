@@ -1,0 +1,5 @@
+// Config file to allow for building on command line without code signing
+CODE_SIGN_IDENTITY=""
+CODE_SIGNING_REQUIRED="NO"
+CODE_SIGN_ENTITLEMENTS=""
+CODE_SIGNING_ALLOWED="NO"

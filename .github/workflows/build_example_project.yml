@@ -1,0 +1,23 @@
+name: Build Example Project
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Version
+      run: xcodebuild -version
+    - name: Install XcodeGen
+      run: brew install xcodegen
+    - name: Run XcodeGen
+      run: xcodegen
+    - name: Build
+      run: make build_example_project
