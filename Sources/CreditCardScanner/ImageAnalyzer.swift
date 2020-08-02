@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  ImageAnalyzer.swift
 //  
 //
 //  Created by miyasaka on 2020/07/30.
@@ -17,11 +17,11 @@ class ImageAnalyzer {
 
     typealias PredictedCount = Int
     private var predictedCardNumberDictionary: [String: PredictedCount] = [:]
-    private var electedCardNumber: String?
+    private var selectedCardNumber: String?
     private var predictedNameDictionary: [String: PredictedCount] = [:]
-    private var electedName: String?
+    private var selectedName: String?
     private var predictedExpireDateDictionary: [DateComponents: PredictedCount] = [:]
-    private var electedExpireDate: DateComponents?
+    private var selectedExpireDate: DateComponents?
 
     private weak var delegate: ImageAnalyzerProtocol?
     init(delegate: ImageAnalyzerProtocol) {
@@ -56,14 +56,13 @@ class ImageAnalyzer {
         // These may be contained in the date strings, so ignore them only for names
         let invalidNames = ["expiration", "valid", "since", "from", "until", "month", "year"]
         let name: Regex = #"([A-z]{2,}\h([A-z.]+\h)?[A-z]{2,})"#
-        // TODO: strip these words? valid,thru,expiration
 
         guard let results = request.results as? [VNRecognizedTextObservation] else { return }
 
         var creditCard = CreditCard(number: nil, name: nil, date: nil)
 
         let maxCandidates = 1
-        for result in results { // TODO: process text here
+        for result in results {
             guard
                 let candidate = result.topCandidates(maxCandidates).first,
                 candidate.confidence > 0.1
@@ -98,7 +97,7 @@ class ImageAnalyzer {
             let count = strongSelf.predictedNameDictionary[name] ?? 0
             strongSelf.predictedNameDictionary[name] = count + 1
             if count > 2 {
-                strongSelf.electedName = name
+                strongSelf.selectedName = name
             }
         }
         // ExpireDate
@@ -106,7 +105,7 @@ class ImageAnalyzer {
             let count = strongSelf.predictedExpireDateDictionary[date] ?? 0
             strongSelf.predictedExpireDateDictionary[date] = count + 1
             if count > 2 {
-                strongSelf.electedExpireDate = date
+                strongSelf.selectedExpireDate = date
             }
         }
 
@@ -115,19 +114,19 @@ class ImageAnalyzer {
             let count = strongSelf.predictedCardNumberDictionary[number] ?? 0
             strongSelf.predictedCardNumberDictionary[number] = count + 1
             if count > 2 {
-                strongSelf.electedCardNumber = number
+                strongSelf.selectedCardNumber = number
             }
         }
 
-        guard strongSelf.electedCardNumber != nil else {
+        guard strongSelf.selectedCardNumber != nil else {
             return
         }
         strongSelf.completeAnalyzation()
     }
 
     func completeAnalyzation() {
-        let elected = CreditCard(number: electedCardNumber, name: electedName, date: electedExpireDate)
-        delegate?.didFinishAnalyzation(with: .success(elected))
+        let selected = CreditCard(number: selectedCardNumber, name: selectedName, date: selectedExpireDate)
+        delegate?.didFinishAnalyzation(with: .success(selected))
     }
 
 }

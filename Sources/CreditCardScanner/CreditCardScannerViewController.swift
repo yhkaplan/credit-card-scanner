@@ -29,8 +29,8 @@ open class CreditCardScannerViewController: UIViewController {
     // MARK: - Subviews and layers
     /// View representing live camera
     private lazy var cameraView: CameraView = CameraView(delegate: self)
-    /// Analizer
-    lazy var analyzationManager = ImageAnalyzer(delegate: self)
+    /// Analyzes text data for credit card info
+    lazy var analyzer = ImageAnalyzer(delegate: self)
 
     private weak var delegate: CreditCardScannerViewControllerDelegate?
 
@@ -120,7 +120,7 @@ private extension CreditCardScannerViewController {
 
 extension CreditCardScannerViewController: CameraViewDelegate {
     internal func didCapture(image: CGImage) {
-        analyzationManager.analyze(image: image)
+        analyzer.analyze(image: image)
     }
 
     internal func didError(with error: CreditCardScannerError) {
@@ -175,10 +175,6 @@ extension AVCaptureDevice {
         }
     }
 }
-
 #endif
 #endif
 #endif
-
-
-
