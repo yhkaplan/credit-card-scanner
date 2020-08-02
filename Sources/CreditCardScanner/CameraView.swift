@@ -134,12 +134,12 @@ final class CameraView: UIView {
         backLayer.backgroundColor = UIColor.black.withAlphaComponent(0.7).cgColor
 
         //  くり抜き部分のframeの計算
-        let cuttedWidth: CGFloat = bounds.width - 40
+        let cuttedWidth: CGFloat = bounds.width - 40.0
         // クレカの縦横は1:1618の黄金比らしい
         let cuttedHeight: CGFloat = cuttedWidth * 0.6180469716
 
-        let centerVertical = (bounds.height / 2)
-        let cuttedY: CGFloat = centerVertical - (cuttedHeight / 2)
+        let centerVertical = (bounds.height / 2.0)
+        let cuttedY: CGFloat = centerVertical - (cuttedHeight / 2.0)
         let cuttedX: CGFloat = 20.0
 
         let cuttedRect = CGRect(x: cuttedX,
