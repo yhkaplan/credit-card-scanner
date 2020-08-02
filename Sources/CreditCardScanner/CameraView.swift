@@ -153,9 +153,16 @@ final class CameraView: UIView {
         path.append(UIBezierPath(rect: bounds))
         maskLayer.path = path.cgPath
         maskLayer.fillRule = .evenOdd
-
         backLayer.mask = maskLayer
         layer.addSublayer(backLayer)
+
+        let strokeLayer = CAShapeLayer()
+        strokeLayer.lineWidth = 3.0
+        strokeLayer.strokeColor = UIColor.white.cgColor
+        strokeLayer.path = UIBezierPath(roundedRect: cuttedRect, cornerRadius: 10.0).cgPath
+        strokeLayer.fillColor = nil
+        layer.addSublayer(strokeLayer)
+
 
         let imageHeight: CGFloat = imageRatio.imageHeight
         let imageWidth: CGFloat = imageRatio.imageWidth
