@@ -13,15 +13,16 @@ protocol ImageAnalyzerProtocol: AnyObject {
     func didFinishAnalyzation(with result: Result<CreditCard, CreditCardScannerError>)
 }
 
-class ImageAnalyzer {
+final class ImageAnalyzer {
+    enum Candidate: Hashable {
+        case number(String), name(String)
+        case expireDate(DateComponents)
+    }
 
     typealias PredictedCount = Int
-    private var predictedCardNumberDictionary: [String: PredictedCount] = [:]
-    private var selectedCardNumber: String?
-    private var predictedNameDictionary: [String: PredictedCount] = [:]
-    private var selectedName: String?
-    private var predictedExpireDateDictionary: [DateComponents: PredictedCount] = [:]
-    private var selectedExpireDate: DateComponents?
+
+    private var selectedCard = CreditCard()
+    private var predictedCardInfo: [Candidate: PredictedCount] = [:]
 
     private weak var delegate: ImageAnalyzerProtocol?
     init(delegate: ImageAnalyzerProtocol) {
@@ -40,8 +41,8 @@ class ImageAnalyzer {
         do {
             try requestHandler.perform([request])
         } catch {
-            delegate?.didFinishAnalyzation(with: .failure(CreditCardScannerError(kind: .photoProcessing,
-                                                                                      underlyingError: error)))
+            let e = CreditCardScannerError(kind: .photoProcessing, underlyingError: error)
+            delegate?.didFinishAnalyzation(with: .failure(e))
         }
     }
 
@@ -58,7 +59,7 @@ class ImageAnalyzer {
 
         guard let results = request.results as? [VNRecognizedTextObservation] else { return }
 
-        var creditCard = CreditCard(number: nil, name: nil, date: nil)
+        var creditCard = CreditCard(number: nil, name: nil, expireDate: nil)
 
         let maxCandidates = 1
         for result in results {
@@ -77,7 +78,7 @@ class ImageAnalyzer {
             // the first capture is the entire regex match, so using the last
             } else if let month = month.captures(in: string).last.flatMap(Int.init),
                 let year = year.captures(in: string).last.flatMap(Int.init) {
-                creditCard.date = DateComponents(year: year, month: month)
+                creditCard.expireDate = DateComponents(year: year, month: month)
 
             } else if let name = name.firstMatch(in: string) {
                 let containsInvalidName = invalidNames.contains { name.lowercased().contains($0)}
@@ -91,39 +92,33 @@ class ImageAnalyzer {
 
         // Name
         if let name = creditCard.name {
-            let count = strongSelf.predictedNameDictionary[name] ?? 0
-            strongSelf.predictedNameDictionary[name] = count + 1
+            let count = strongSelf.predictedCardInfo[.name(name), default: 0]
+            strongSelf.predictedCardInfo[.name(name)] = count + 1
             if count > 2 {
-                strongSelf.selectedName = name
+                strongSelf.selectedCard.name = name
             }
         }
         // ExpireDate
-        if let date = creditCard.date {
-            let count = strongSelf.predictedExpireDateDictionary[date] ?? 0
-            strongSelf.predictedExpireDateDictionary[date] = count + 1
+        if let date = creditCard.expireDate {
+            let count = strongSelf.predictedCardInfo[.expireDate(date), default: 0]
+            strongSelf.predictedCardInfo[.expireDate(date)] = count + 1
             if count > 2 {
-                strongSelf.selectedExpireDate = date
+                strongSelf.selectedCard.expireDate = date
             }
         }
 
         // Number
         if let number = creditCard.number {
-            let count = strongSelf.predictedCardNumberDictionary[number] ?? 0
-            strongSelf.predictedCardNumberDictionary[number] = count + 1
+            let count = strongSelf.predictedCardInfo[.number(number), default: 0]
+            strongSelf.predictedCardInfo[.number(number)] = count + 1
             if count > 2 {
-                strongSelf.selectedCardNumber = number
+                strongSelf.selectedCard.number = number
             }
         }
 
-        guard strongSelf.selectedCardNumber != nil else {
-            return
+        if strongSelf.selectedCard.number != nil {
+            strongSelf.delegate?.didFinishAnalyzation(with: .success(strongSelf.selectedCard))
         }
-        strongSelf.completeAnalyzation()
-    }
-
-    func completeAnalyzation() {
-        let selected = CreditCard(number: selectedCardNumber, name: selectedName, date: selectedExpireDate)
-        delegate?.didFinishAnalyzation(with: .success(selected))
     }
 
 }
