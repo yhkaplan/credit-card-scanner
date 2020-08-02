@@ -49,10 +49,9 @@ class ImageAnalyzer {
         guard let strongSelf = self else { return }
 
         let creditCardNumber: Regex = #"(\d{4}\h+\d{4}\h+\d{4}\h+\d{4})"#
-        let twoDigits = #"(\d{2})"#
-        let date = Regex(twoDigits + #"\/"# + twoDigits)
-        // mrs, mr
-        let wordsToSkip = ["mastercard", "jcb", "visa", "express", "bank",/* "card", */"platinum", "reward"] // TODO: add `card` back in
+        let month: Regex = #"(\d{2})\/\d{2}"#
+        let year: Regex = #"\d{2}\/(\d{2})"#
+        let wordsToSkip = ["mastercard", "jcb", "visa", "express", "bank", "card", "platinum", "reward"]
         // These may be contained in the date strings, so ignore them only for names
         let invalidNames = ["expiration", "valid", "since", "from", "until", "month", "year"]
         let name: Regex = #"([A-z]{2,}\h([A-z.]+\h)?[A-z]{2,})"#
@@ -66,20 +65,18 @@ class ImageAnalyzer {
             guard
                 let candidate = result.topCandidates(maxCandidates).first,
                 candidate.confidence > 0.1
-                else { continue }
+            else { continue }
 
             let string = candidate.string
-
             let containsWordToSkip = wordsToSkip.contains { string.lowercased().contains($0) }
             if containsWordToSkip { continue }
 
             if let cardNumber = creditCardNumber.firstMatch(in: string) {
                 creditCard.number = cardNumber
 
-            } else if string =~ date {
-                let matches = Regex(twoDigits).matches(in: string)
-                let month = matches.first.flatMap(Int.init)
-                let year = matches.last.flatMap(Int.init)
+            // the first capture is the entire regex match, so using the last
+            } else if let month = month.captures(in: string).last.flatMap(Int.init),
+                let year = year.captures(in: string).last.flatMap(Int.init) {
                 creditCard.date = DateComponents(year: year, month: month)
 
             } else if let name = name.firstMatch(in: string) {
