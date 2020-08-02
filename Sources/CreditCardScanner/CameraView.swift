@@ -131,7 +131,7 @@ final class CameraView: UIView {
         /// Mask layer that covering area around camera view
         let backLayer = CALayer()
         backLayer.frame = bounds
-        backLayer.backgroundColor = UIColor.black.withAlphaComponent(0.8).cgColor
+        backLayer.backgroundColor = UIColor.black.withAlphaComponent(0.7).cgColor
 
         //  くり抜き部分のframeの計算
         let cuttedWidth: CGFloat = bounds.width - 40
