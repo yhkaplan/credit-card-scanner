@@ -99,21 +99,35 @@ private extension CreditCardScannerViewController {
         NSLayoutConstraint.activate([
             bottomStackView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             bottomStackView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            bottomStackView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             bottomStackView.topAnchor.constraint(equalTo: cameraView.bottomAnchor),
+        ])
+
+        cancelButton.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(cancelButton)
+        NSLayoutConstraint.activate([
+            cancelButton.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            cancelButton.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            cancelButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
         ])
 
         bottomStackView.axis = .vertical
         bottomStackView.spacing = 16.0
         bottomStackView.isLayoutMarginsRelativeArrangement = true
-        bottomStackView.directionalLayoutMargins = .init(top: 0, leading: 8.0, bottom: 8.0, trailing: 8.0)
-        let arrangedSubviews: [UIView] = [cancelButton]
+        bottomStackView.distribution = .equalSpacing
+        bottomStackView.directionalLayoutMargins = .init(top: 8.0, leading: 8.0, bottom: 8.0, trailing: 8.0)
+        let arrangedSubviews: [UIView] = [titleLabel, subtitleLabel]
         arrangedSubviews.forEach(bottomStackView.addArrangedSubview)
     }
 
     func setupLabelsAndButtons() {
+        titleLabel.text = "Add card"
+        titleLabel.textAlignment = .center
+        titleLabel.font = .preferredFont(forTextStyle: .largeTitle)
+        subtitleLabel.text = "Line up card within the lines"
+        subtitleLabel.textAlignment = .center
+        subtitleLabel.font = .preferredFont(forTextStyle: .title3)
         cancelButton.setTitle("Cancel", for: .normal)
-        cancelButton.tintColor = .white
+        cancelButton.setTitleColor(.gray, for: .normal)
         cancelButton.addTarget(self, action: #selector(cancel), for: .touchUpInside)
     }
 }
