@@ -38,6 +38,8 @@ final class CameraView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
+    var imageRatio: ImageRatio = .vga640x480
+
     //    /// View representing the cutout rectangle to align card with
     //    open var cutoutView = UIView()
 
@@ -86,7 +88,7 @@ final class CameraView: UIView {
     private func _setupCamera() {
         let session = AVCaptureSession()
         session.beginConfiguration()
-        session.sessionPreset = .hd1920x1080
+        session.sessionPreset = imageRatio.preset
 
         guard let videoDevice = AVCaptureDevice.default(.builtInWideAngleCamera,
                                                         for: .video,
@@ -155,8 +157,8 @@ final class CameraView: UIView {
         backLayer.mask = maskLayer
         layer.addSublayer(backLayer)
 
-        let imageHeight: CGFloat = 1920
-        let imageWidth: CGFloat = 1080
+        let imageHeight: CGFloat = imageRatio.imageHeight
+        let imageWidth: CGFloat = imageRatio.imageWidth
 
         let ratioHeight = imageHeight / frame.height
         let ratioWidth =  imageWidth / frame.width

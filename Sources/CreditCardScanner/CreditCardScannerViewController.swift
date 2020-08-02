@@ -91,7 +91,7 @@ private extension CreditCardScannerViewController {
             cameraView.topAnchor.constraint(equalTo: view.topAnchor),
             cameraView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             cameraView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            cameraView.heightAnchor.constraint(equalTo: cameraView.widthAnchor, multiplier: 1.8, constant: 0)
+            cameraView.heightAnchor.constraint(equalTo: cameraView.widthAnchor, multiplier: cameraView.imageRatio.multiplierAgainstWidth, constant: 0)
         ])
 
         bottomStackView.translatesAutoresizingMaskIntoConstraints = false
