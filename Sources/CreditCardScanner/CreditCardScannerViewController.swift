@@ -122,10 +122,13 @@ private extension CreditCardScannerViewController {
     func setupLabelsAndButtons() {
         titleLabel.text = "Add card"
         titleLabel.textAlignment = .center
+        titleLabel.textColor = .white
         titleLabel.font = .preferredFont(forTextStyle: .largeTitle)
         subtitleLabel.text = "Line up card within the lines"
         subtitleLabel.textAlignment = .center
         subtitleLabel.font = .preferredFont(forTextStyle: .title3)
+        subtitleLabel.textColor = .white
+        subtitleLabel.numberOfLines = 0
         cancelButton.setTitle("Cancel", for: .normal)
         cancelButton.setTitleColor(.gray, for: .normal)
         cancelButton.addTarget(self, action: #selector(cancel), for: .touchUpInside)
