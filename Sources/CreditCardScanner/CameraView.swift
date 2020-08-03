@@ -29,12 +29,8 @@ final class CameraView: UIView {
         label: "com.yhkaplan.credit-card-scanner.sampleBufferQueue"
     )
 
-    private let customModel: CreditCardScannerCustomModel
-
-    init(delegate: CameraViewDelegate,
-    customModel: CreditCardScannerCustomModel){
+    init(delegate: CameraViewDelegate){
         self.delegate = delegate
-        self.customModel = customModel
         super.init(frame: .zero)
     }
 

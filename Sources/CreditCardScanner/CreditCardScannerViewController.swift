@@ -28,8 +28,7 @@ open class CreditCardScannerViewController: UIViewController {
 
     // MARK: - Subviews and layers
     /// View representing live camera
-    private lazy var cameraView: CameraView = CameraView(delegate: self, customModel:
-        self.customModel)
+    private lazy var cameraView: CameraView = CameraView(delegate: self)
     /// Analyzes text data for credit card info
     lazy var analyzer = ImageAnalyzer(delegate: self)
 
@@ -85,8 +84,7 @@ private extension CreditCardScannerViewController {
     }
 
     func layoutSubviews() {
-        view.backgroundColor = .black
-        // TODO: make open for customization?
+        view.backgroundColor = customModel.backgroundColor
         // TODO: test screen rotation cameraView, cutoutView
         cameraView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(cameraView)
@@ -123,17 +121,17 @@ private extension CreditCardScannerViewController {
     }
 
     func setupLabelsAndButtons() {
-        titleLabel.text = "Add card"
+        titleLabel.text = customModel.title
         titleLabel.textAlignment = .center
-        titleLabel.textColor = .white
+        titleLabel.textColor = customModel.textColor
         titleLabel.font = .preferredFont(forTextStyle: .largeTitle)
-        subtitleLabel.text = "Line up card within the lines"
+        subtitleLabel.text = customModel.subText
         subtitleLabel.textAlignment = .center
         subtitleLabel.font = .preferredFont(forTextStyle: .title3)
-        subtitleLabel.textColor = .white
+        subtitleLabel.textColor = customModel.textColor
         subtitleLabel.numberOfLines = 0
-        cancelButton.setTitle("Cancel", for: .normal)
-        cancelButton.setTitleColor(.gray, for: .normal)
+        cancelButton.setTitle(customModel.cancelButtonText, for: .normal)
+        cancelButton.setTitleColor(customModel.cancelButtonTextColor, for: .normal)
         cancelButton.addTarget(self, action: #selector(cancel), for: .touchUpInside)
     }
 }
@@ -199,12 +197,17 @@ extension AVCaptureDevice {
 public struct CreditCardScannerCustomModel {
     let title: String
     let subText: String
+    let cancelButtonText: String
+    let cancelButtonTextColor: UIColor
     let textColor: UIColor
     let backgroundColor: UIColor
 
-    public init(title: String, subText: String, textColor: UIColor, backgroundColor: UIColor) {
+
+    public init(title: String, subText: String, cancelButtonText: String, cancelButtonTextColor: UIColor, textColor: UIColor, backgroundColor: UIColor) {
         self.title = title
         self.subText = subText
+        self.cancelButtonText = cancelButtonText
+        self.cancelButtonTextColor = cancelButtonTextColor
         self.textColor = textColor
         self.backgroundColor = backgroundColor
     }
@@ -212,6 +215,8 @@ public struct CreditCardScannerCustomModel {
     public static let `default` = CreditCardScannerCustomModel(
         title: "Add card",
         subText: "Line up card within the lines",
+        cancelButtonText: "Cancel",
+        cancelButtonTextColor: .gray,
         textColor: .white,
         backgroundColor: .black
     )
