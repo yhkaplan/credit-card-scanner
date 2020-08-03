@@ -106,7 +106,7 @@ private extension CreditCardScannerViewController {
         NSLayoutConstraint.activate([
             cancelButton.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             cancelButton.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            cancelButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor,constant: 20)
+            cancelButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor,constant: -20)
         ])
 
         bottomStackView.axis = .vertical
