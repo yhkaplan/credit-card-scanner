@@ -14,7 +14,7 @@ class ExampleResultViewController: UIViewController{
 
     @IBAction func startButton(_ sender: UIButton) {
 
-//        You can make a custom model and change only neccessary parameters.
+//        You can change only neccessary parameters.
 //        let vc = CreditCardScannerViewController(delegate: self)
 //        vc.titleLabelText = "カードを追加"
 //        vc.subtitleLabelText = "枠線にカードを合わせてください"
