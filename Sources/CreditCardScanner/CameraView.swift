@@ -38,7 +38,7 @@ final class CameraView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    var imageRatio: ImageRatio = .vga640x480
+    private let imageRatio: ImageRatio = .vga640x480
 
     // MARK: - Region of interest and text orientation
     /// Region of video data output buffer that recognition should be run on.
