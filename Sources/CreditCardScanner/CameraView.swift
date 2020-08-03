@@ -19,6 +19,8 @@ protocol CameraViewDelegate: AnyObject {
 final class CameraView: UIView {
 
     weak var delegate: CameraViewDelegate?
+    let customModel: CreditCardScannerCustomModel
+
     // MARK: - Capture related
     private let captureSessionQueue = DispatchQueue(
         label: "com.yhkaplan.credit-card-scanner.captureSessionQueue"
@@ -29,8 +31,9 @@ final class CameraView: UIView {
         label: "com.yhkaplan.credit-card-scanner.sampleBufferQueue"
     )
 
-    init(delegate: CameraViewDelegate){
+    init(delegate: CameraViewDelegate, customModel: CreditCardScannerCustomModel){
         self.delegate = delegate
+        self.customModel = customModel
         super.init(frame: .zero)
     }
 
@@ -130,7 +133,7 @@ final class CameraView: UIView {
         /// Mask layer that covering area around camera view
         let backLayer = CALayer()
         backLayer.frame = bounds
-        backLayer.backgroundColor = UIColor.black.withAlphaComponent(0.7).cgColor
+        backLayer.backgroundColor = customModel.imageMaskColor.withAlphaComponent(customModel.imageMaskAlpha).cgColor
 
         //  culcurate cutoutted frame
         let cuttedWidth: CGFloat = bounds.width - 40.0
@@ -156,7 +159,7 @@ final class CameraView: UIView {
 
         let strokeLayer = CAShapeLayer()
         strokeLayer.lineWidth = 3.0
-        strokeLayer.strokeColor = UIColor.white.cgColor
+        strokeLayer.strokeColor = customModel.strokeColor.cgColor
         strokeLayer.path = UIBezierPath(roundedRect: cuttedRect, cornerRadius: 10.0).cgPath
         strokeLayer.fillColor = nil
         layer.addSublayer(strokeLayer)

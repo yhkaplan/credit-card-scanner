@@ -28,7 +28,7 @@ open class CreditCardScannerViewController: UIViewController {
 
     // MARK: - Subviews and layers
     /// View representing live camera
-    private lazy var cameraView: CameraView = CameraView(delegate: self)
+    private lazy var cameraView: CameraView = CameraView(delegate: self, customModel: self.customModel)
     /// Analyzes text data for credit card info
     lazy var analyzer = ImageAnalyzer(delegate: self)
 
@@ -84,7 +84,7 @@ private extension CreditCardScannerViewController {
     }
 
     func layoutSubviews() {
-        view.backgroundColor = customModel.backgroundColor
+        view.backgroundColor = customModel.textBackgroundColor
         // TODO: test screen rotation cameraView, cutoutView
         cameraView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(cameraView)
@@ -200,7 +200,10 @@ public struct CreditCardScannerCustomModel {
     let cancelButtonText: String
     let cancelButtonTextColor: UIColor
     let textColor: UIColor
-    let backgroundColor: UIColor
+    let strokeColor: UIColor
+    let imageMaskColor: UIColor
+    let imageMaskAlpha: CGFloat
+    let textBackgroundColor: UIColor
 
 
     public init(title: String = "Add card",
@@ -208,13 +211,20 @@ public struct CreditCardScannerCustomModel {
                 cancelButtonText: String = "Cancel",
                 cancelButtonTextColor: UIColor = .gray,
                 textColor: UIColor = .white,
-                backgroundColor: UIColor = .black) {
+                strokeColor: UIColor = .white,
+                imageMaskColor: UIColor = .black,
+                imageMaskAlpha: CGFloat = 0.7,
+                textBackgroundColor: UIColor = .black) {
+
         self.title = title
         self.subText = subText
         self.cancelButtonText = cancelButtonText
         self.cancelButtonTextColor = cancelButtonTextColor
         self.textColor = textColor
-        self.backgroundColor = backgroundColor
+        self.strokeColor = strokeColor
+        self.imageMaskColor = imageMaskColor
+        self.imageMaskAlpha = imageMaskAlpha
+        self.textBackgroundColor = textBackgroundColor
     }
 }
 
