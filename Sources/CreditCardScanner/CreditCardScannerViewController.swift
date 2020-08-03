@@ -53,27 +53,24 @@ open class CreditCardScannerViewController: UIViewController {
 
     open override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .black
+        layoutSubviews()
+        setupLabelsAndButtons()
         AVCaptureDevice.authorize { [weak self] authoriazed in
             // This is on the main thread.
             guard let strongSelf = self else {
                 return
             }
-            guard authoriazed else {
-                strongSelf.delegate?.creditCardScannerViewController(strongSelf, didErrorWith: CreditCardScannerError.init(kind: .authorizationDenied, underlyingError: nil))
-                return
-            }
-
-            strongSelf.setupLabelsAndButtons()
-            strongSelf.layoutSubviews()
+//            guard authoriazed else {
+//                strongSelf.delegate?.creditCardScannerViewController(strongSelf, didErrorWith: CreditCardScannerError.init(kind: .authorizationDenied, underlyingError: nil))
+//                return
+//            }
             strongSelf.cameraView.setupCamera()
         }
     }
 
-    open override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
+    override open func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
         cameraView.setupRegionOfInterest()
-        cameraView.startSession()
     }
 }
 
@@ -83,7 +80,9 @@ private extension CreditCardScannerViewController {
         delegate?.creditCardScannerViewControllerDidCancel(self)
     }
 
-    func layoutSubviews() { // TODO: make open for customization?
+    func layoutSubviews() {
+        view.backgroundColor = .black
+        // TODO: make open for customization?
         // TODO: test screen rotation cameraView, cutoutView
         cameraView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(cameraView)
@@ -91,7 +90,7 @@ private extension CreditCardScannerViewController {
             cameraView.topAnchor.constraint(equalTo: view.topAnchor),
             cameraView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             cameraView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            cameraView.heightAnchor.constraint(equalTo: cameraView.widthAnchor, multiplier: cameraView.imageRatio.multiplierAgainstWidth, constant: 0)
+            cameraView.heightAnchor.constraint(equalTo: cameraView.widthAnchor, multiplier:  0.6180469716, constant: 100)
         ])
 
         bottomStackView.translatesAutoresizingMaskIntoConstraints = false
@@ -107,7 +106,7 @@ private extension CreditCardScannerViewController {
         NSLayoutConstraint.activate([
             cancelButton.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             cancelButton.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            cancelButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
+            cancelButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor,constant: 20)
         ])
 
         bottomStackView.axis = .vertical

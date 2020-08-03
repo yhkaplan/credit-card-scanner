@@ -117,9 +117,10 @@ final class CameraView: UIView {
         }
         session.commitConfiguration()
 
-
         DispatchQueue.main.async { [weak self] in
+            self?.videoPreviewLayer.videoGravity = AVLayerVideoGravity.resizeAspectFill
             self?.videoSession = session
+            self?.startSession()
         }
     }
 
@@ -191,8 +192,11 @@ extension CameraView: AVCaptureVideoDataOutputSampleBufferDelegate {
         var cgImage: CGImage?
         VTCreateCGImageFromCVPixelBuffer(pixelBuffer, options: nil, imageOut: &cgImage)
 
+        guard let regionOfInterest = regionOfInterest else {
+            return
+        }
+
         guard let fullCameraImage = cgImage,
-            let regionOfInterest = regionOfInterest,
             let croppedImage = fullCameraImage.cropping(to: regionOfInterest) else {
                 delegate?.didError(with: CreditCardScannerError.init(kind: .capture))
                 return
