@@ -48,7 +48,7 @@ extension ExampleResultViewController: CreditCardScannerViewControllerDelegate {
 
     func creditCardScannerViewController(_ viewController: CreditCardScannerViewController, didFinishWith card: CreditCard) {
         viewController.dismiss(animated: true, completion: nil)
-        resultLabel.text = ["\(card.number)","\(card.date)", "\(card.name)"].joined(separator: "\n")
+        resultLabel.text = ["\(card.number)","\(card.expireDate)", "\(card.name)"].joined(separator: "\n")
         print("\(card)")
     }
 }

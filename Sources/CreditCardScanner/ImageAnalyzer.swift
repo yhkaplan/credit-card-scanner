@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  ImageAnalyzer.swift
 //  
 //
 //  Created by miyasaka on 2020/07/30.
@@ -13,15 +13,16 @@ protocol ImageAnalyzerProtocol: AnyObject {
     func didFinishAnalyzation(with result: Result<CreditCard, CreditCardScannerError>)
 }
 
-class ImageAnalyzer {
+final class ImageAnalyzer {
+    enum Candidate: Hashable {
+        case number(String), name(String)
+        case expireDate(DateComponents)
+    }
 
     typealias PredictedCount = Int
-    private var predictedCardNumberDictionary: [String: PredictedCount] = [:]
-    private var electedCardNumber: String?
-    private var predictedNameDictionary: [String: PredictedCount] = [:]
-    private var electedName: String?
-    private var predictedExpireDateDictionary: [DateComponents: PredictedCount] = [:]
-    private var electedExpireDate: DateComponents?
+
+    private var selectedCard = CreditCard()
+    private var predictedCardInfo: [Candidate: PredictedCount] = [:]
 
     private weak var delegate: ImageAnalyzerProtocol?
     init(delegate: ImageAnalyzerProtocol) {
@@ -40,8 +41,8 @@ class ImageAnalyzer {
         do {
             try requestHandler.perform([request])
         } catch {
-            delegate?.didFinishAnalyzation(with: .failure(CreditCardScannerError(kind: .photoProcessing,
-                                                                                      underlyingError: error)))
+            let e = CreditCardScannerError(kind: .photoProcessing, underlyingError: error)
+            delegate?.didFinishAnalyzation(with: .failure(e))
         }
     }
 
@@ -49,39 +50,35 @@ class ImageAnalyzer {
         guard let strongSelf = self else { return }
 
         let creditCardNumber: Regex = #"(\d{4}\h+\d{4}\h+\d{4}\h+\d{4})"#
-        let twoDigits = #"(\d{2})"#
-        let date = Regex(twoDigits + #"\/"# + twoDigits)
-        // mrs, mr
-        let wordsToSkip = ["mastercard", "jcb", "visa", "express", "bank",/* "card", */"platinum", "reward"] // TODO: add `card` back in
+        let month: Regex = #"(\d{2})\/\d{2}"#
+        let year: Regex = #"\d{2}\/(\d{2})"#
+        let wordsToSkip = ["mastercard", "jcb", "visa", "express", "bank", "card", "platinum", "reward"]
         // These may be contained in the date strings, so ignore them only for names
         let invalidNames = ["expiration", "valid", "since", "from", "until", "month", "year"]
         let name: Regex = #"([A-z]{2,}\h([A-z.]+\h)?[A-z]{2,})"#
-        // TODO: strip these words? valid,thru,expiration
 
         guard let results = request.results as? [VNRecognizedTextObservation] else { return }
 
-        var creditCard = CreditCard(number: nil, name: nil, date: nil)
+        var creditCard = CreditCard(number: nil, name: nil, expireDate: nil)
 
         let maxCandidates = 1
-        for result in results { // TODO: process text here
+        for result in results {
             guard
                 let candidate = result.topCandidates(maxCandidates).first,
                 candidate.confidence > 0.1
-                else { continue }
+            else { continue }
 
             let string = candidate.string
-
             let containsWordToSkip = wordsToSkip.contains { string.lowercased().contains($0) }
             if containsWordToSkip { continue }
 
             if let cardNumber = creditCardNumber.firstMatch(in: string) {
                 creditCard.number = cardNumber
 
-            } else if string =~ date {
-                let matches = Regex(twoDigits).matches(in: string)
-                let month = matches.first.flatMap(Int.init)
-                let year = matches.last.flatMap(Int.init)
-                creditCard.date = DateComponents(year: year, month: month)
+            // the first capture is the entire regex match, so using the last
+            } else if let month = month.captures(in: string).last.flatMap(Int.init),
+                let year = year.captures(in: string).last.flatMap(Int.init) {
+                creditCard.expireDate = DateComponents(year: year, month: month)
 
             } else if let name = name.firstMatch(in: string) {
                 let containsInvalidName = invalidNames.contains { name.lowercased().contains($0)}
@@ -95,39 +92,33 @@ class ImageAnalyzer {
 
         // Name
         if let name = creditCard.name {
-            let count = strongSelf.predictedNameDictionary[name] ?? 0
-            strongSelf.predictedNameDictionary[name] = count + 1
+            let count = strongSelf.predictedCardInfo[.name(name), default: 0]
+            strongSelf.predictedCardInfo[.name(name)] = count + 1
             if count > 2 {
-                strongSelf.electedName = name
+                strongSelf.selectedCard.name = name
             }
         }
         // ExpireDate
-        if let date = creditCard.date {
-            let count = strongSelf.predictedExpireDateDictionary[date] ?? 0
-            strongSelf.predictedExpireDateDictionary[date] = count + 1
+        if let date = creditCard.expireDate {
+            let count = strongSelf.predictedCardInfo[.expireDate(date), default: 0]
+            strongSelf.predictedCardInfo[.expireDate(date)] = count + 1
             if count > 2 {
-                strongSelf.electedExpireDate = date
+                strongSelf.selectedCard.expireDate = date
             }
         }
 
         // Number
         if let number = creditCard.number {
-            let count = strongSelf.predictedCardNumberDictionary[number] ?? 0
-            strongSelf.predictedCardNumberDictionary[number] = count + 1
+            let count = strongSelf.predictedCardInfo[.number(number), default: 0]
+            strongSelf.predictedCardInfo[.number(number)] = count + 1
             if count > 2 {
-                strongSelf.electedCardNumber = number
+                strongSelf.selectedCard.number = number
             }
         }
 
-        guard strongSelf.electedCardNumber != nil else {
-            return
+        if strongSelf.selectedCard.number != nil {
+            strongSelf.delegate?.didFinishAnalyzation(with: .success(strongSelf.selectedCard))
         }
-        strongSelf.completeAnalyzation()
-    }
-
-    func completeAnalyzation() {
-        let elected = CreditCard(number: electedCardNumber, name: electedName, date: electedExpireDate)
-        delegate?.didFinishAnalyzation(with: .success(elected))
     }
 
 }
