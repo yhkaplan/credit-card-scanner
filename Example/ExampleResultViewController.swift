@@ -13,7 +13,17 @@ class ExampleResultViewController: UIViewController{
     @IBOutlet weak var resultLabel: UILabel!
 
     @IBAction func startButton(_ sender: UIButton) {
-        let vc = CreditCardScannerViewController(delegate: self, customModel: .init(title: "a", subText: "b", textColor: .white, backgroundColor: .blue))
+
+        //        You can make a custom model and change neccessary parameters.
+        //
+        //        let customModel = CreditCardScannerCustomModel(
+        //                                                    title: "カードを追加",
+        //                                                    subText: "枠線にカードを合わせてください"
+        //                                                    cancelButtonText: "キャンセル")
+        //        let vc = CreditCardScannerViewController(delegate: self,
+        //                                                customModel: customModel)
+
+        let vc = CreditCardScannerViewController(delegate: self)
         vc.modalPresentationStyle = .fullScreen
         present(vc, animated: true, completion: nil)
     }
