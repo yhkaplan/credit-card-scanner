@@ -164,19 +164,20 @@ final class CameraView: UIView {
         let imageHeight: CGFloat = imageRatio.imageHeight
         let imageWidth: CGFloat = imageRatio.imageWidth
 
-        let ratioHeight = imageHeight / frame.height
-        let ratioWidth =  imageWidth / frame.width
-
-        regionOfInterest = CGRect(x: cuttedRect.origin.x * ratioWidth,
-                                  y: cuttedRect.origin.y * ratioHeight,
-                                  width: cuttedRect.width * ratioWidth,
-                                  height: cuttedRect.height * ratioHeight)
+        let acutualImageRatioAgainstVisibleSize = imageWidth / bounds.width
+        let interestX = cuttedRect.origin.x * acutualImageRatioAgainstVisibleSize
+        let interestWidth = cuttedRect.width * acutualImageRatioAgainstVisibleSize
+        let interestHeight = interestWidth * CreditCard.heightRatioAgainstWidth
+        let interestY = (imageHeight / 2.0) - (interestHeight / 2.0)
+        regionOfInterest = CGRect(x: interestX,
+                                  y: interestY,
+                                  width: interestWidth,
+                                  height: interestHeight)
     }
 
 }
 
 extension CameraView: AVCaptureVideoDataOutputSampleBufferDelegate {
-    
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection){
 
         semaphore.wait()
