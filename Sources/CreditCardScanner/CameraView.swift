@@ -53,7 +53,7 @@ final class CameraView: UIView {
         return layer
     }
 
-    var videoSession: AVCaptureSession? {
+    private var videoSession: AVCaptureSession? {
         get {
             videoPreviewLayer.session
         }
