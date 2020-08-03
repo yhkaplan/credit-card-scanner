@@ -60,10 +60,10 @@ open class CreditCardScannerViewController: UIViewController {
             guard let strongSelf = self else {
                 return
             }
-//            guard authoriazed else {
-//                strongSelf.delegate?.creditCardScannerViewController(strongSelf, didErrorWith: CreditCardScannerError.init(kind: .authorizationDenied, underlyingError: nil))
-//                return
-//            }
+            guard authoriazed else {
+                strongSelf.delegate?.creditCardScannerViewController(strongSelf, didErrorWith: CreditCardScannerError.init(kind: .authorizationDenied, underlyingError: nil))
+                return
+            }
             strongSelf.cameraView.setupCamera()
         }
     }
