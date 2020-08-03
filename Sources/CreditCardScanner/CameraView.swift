@@ -40,9 +40,6 @@ final class CameraView: UIView {
 
     var imageRatio: ImageRatio = .vga640x480
 
-    //    /// View representing the cutout rectangle to align card with
-    //    open var cutoutView = UIView()
-
     // MARK: - Region of interest and text orientation
     /// Region of video data output buffer that recognition should be run on.
     /// Gets recalculated once the bounds of the preview layer are known.
