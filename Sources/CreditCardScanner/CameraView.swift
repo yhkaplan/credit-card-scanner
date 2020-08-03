@@ -131,10 +131,9 @@ final class CameraView: UIView {
         backLayer.frame = bounds
         backLayer.backgroundColor = UIColor.black.withAlphaComponent(0.7).cgColor
 
-        //  くり抜き部分のframeの計算
+        //  culcurate cutoutted frame
         let cuttedWidth: CGFloat = bounds.width - 40.0
-        // クレカの縦横は1:1618の黄金比らしい
-        let cuttedHeight: CGFloat = cuttedWidth * 0.6180469716
+        let cuttedHeight: CGFloat = cuttedWidth * CreditCard.heightRatioAgainstWidth
 
         let centerVertical = (bounds.height / 2.0)
         let cuttedY: CGFloat = centerVertical - (cuttedHeight / 2.0)
@@ -177,10 +176,9 @@ final class CameraView: UIView {
 }
 
 extension CameraView: AVCaptureVideoDataOutputSampleBufferDelegate {
-    // ここにカメラ映像の情報が連続で渡される。
+    
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection){
 
-        // 処理を一つ一つすすめるため、排他制御
         semaphore.wait()
         defer { semaphore.signal() }
 
@@ -207,3 +205,8 @@ extension CameraView: AVCaptureVideoDataOutputSampleBufferDelegate {
 }
 #endif
 #endif
+
+extension CreditCard {
+    // The aspect ratio of credit-card is Golden-ratio
+    static let heightRatioAgainstWidth: CGFloat = 0.6180469716
+}
