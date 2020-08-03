@@ -28,11 +28,12 @@ open class CreditCardScannerViewController: UIViewController {
 
     // MARK: - Subviews and layers
     /// View representing live camera
-    private lazy var cameraView: CameraView = CameraView(delegate: self)
+    private lazy var cameraView: CameraView = CameraView(delegate: self, customModel: self.customModel)
     /// Analyzes text data for credit card info
     lazy var analyzer = ImageAnalyzer(delegate: self)
 
     private weak var delegate: CreditCardScannerViewControllerDelegate?
+    private let customModel: CreditCardScannerCustomModel
 
     /// The backgroundColor stack view that is below the camera preview view
     open var bottomStackView = UIStackView()
@@ -41,10 +42,13 @@ open class CreditCardScannerViewController: UIViewController {
     open var cancelButton = UIButton()
 
     // MARK: - Vision-related
-    public init(delegate: CreditCardScannerViewControllerDelegate) {
+    public init(delegate: CreditCardScannerViewControllerDelegate,
+                customModel: CreditCardScannerCustomModel = .init()) {
         self.delegate = delegate
+        self.customModel = customModel
         super.init(nibName: nil, bundle: nil)
     }
+
 
     @available(*, unavailable)
     public required init?(coder: NSCoder) {
@@ -81,8 +85,7 @@ private extension CreditCardScannerViewController {
     }
 
     func layoutSubviews() {
-        view.backgroundColor = .black
-        // TODO: make open for customization?
+        view.backgroundColor = customModel.textBackgroundColor
         // TODO: test screen rotation cameraView, cutoutView
         cameraView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(cameraView)
@@ -119,17 +122,17 @@ private extension CreditCardScannerViewController {
     }
 
     func setupLabelsAndButtons() {
-        titleLabel.text = "Add card"
+        titleLabel.text = customModel.title
         titleLabel.textAlignment = .center
-        titleLabel.textColor = .white
+        titleLabel.textColor = customModel.textColor
         titleLabel.font = .preferredFont(forTextStyle: .largeTitle)
-        subtitleLabel.text = "Line up card within the lines"
+        subtitleLabel.text = customModel.subText
         subtitleLabel.textAlignment = .center
         subtitleLabel.font = .preferredFont(forTextStyle: .title3)
-        subtitleLabel.textColor = .white
+        subtitleLabel.textColor = customModel.textColor
         subtitleLabel.numberOfLines = 0
-        cancelButton.setTitle("Cancel", for: .normal)
-        cancelButton.setTitleColor(.gray, for: .normal)
+        cancelButton.setTitle(customModel.cancelButtonText, for: .normal)
+        cancelButton.setTitleColor(customModel.cancelButtonTextColor, for: .normal)
         cancelButton.addTarget(self, action: #selector(cancel), for: .touchUpInside)
     }
 }
