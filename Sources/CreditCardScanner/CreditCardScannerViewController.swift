@@ -43,7 +43,7 @@ open class CreditCardScannerViewController: UIViewController {
 
     // MARK: - Vision-related
     public init(delegate: CreditCardScannerViewControllerDelegate,
-                customModel: CreditCardScannerCustomModel = .default) {
+                customModel: CreditCardScannerCustomModel = .init()) {
         self.delegate = delegate
         self.customModel = customModel
         super.init(nibName: nil, bundle: nil)
@@ -203,7 +203,12 @@ public struct CreditCardScannerCustomModel {
     let backgroundColor: UIColor
 
 
-    public init(title: String, subText: String, cancelButtonText: String, cancelButtonTextColor: UIColor, textColor: UIColor, backgroundColor: UIColor) {
+    public init(title: String = "Add card",
+                subText: String = "Line up card within the lines",
+                cancelButtonText: String = "Cancel",
+                cancelButtonTextColor: UIColor = .gray,
+                textColor: UIColor = .white,
+                backgroundColor: UIColor = .black) {
         self.title = title
         self.subText = subText
         self.cancelButtonText = cancelButtonText
@@ -211,15 +216,6 @@ public struct CreditCardScannerCustomModel {
         self.textColor = textColor
         self.backgroundColor = backgroundColor
     }
-
-    public static let `default` = CreditCardScannerCustomModel(
-        title: "Add card",
-        subText: "Line up card within the lines",
-        cancelButtonText: "Cancel",
-        cancelButtonTextColor: .gray,
-        textColor: .white,
-        backgroundColor: .black
-    )
 }
 
 #endif
