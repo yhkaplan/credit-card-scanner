@@ -38,8 +38,7 @@ final class CameraView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    //    /// View representing the cutout rectangle to align card with
-    //    open var cutoutView = UIView()
+    private let imageRatio: ImageRatio = .vga640x480
 
     // MARK: - Region of interest and text orientation
     /// Region of video data output buffer that recognition should be run on.
@@ -54,7 +53,7 @@ final class CameraView: UIView {
         return layer
     }
 
-    var videoSession: AVCaptureSession? {
+    private var videoSession: AVCaptureSession? {
         get {
             videoPreviewLayer.session
         }
@@ -86,7 +85,7 @@ final class CameraView: UIView {
     private func _setupCamera() {
         let session = AVCaptureSession()
         session.beginConfiguration()
-        session.sessionPreset = .hd1920x1080
+        session.sessionPreset = imageRatio.preset
 
         guard let videoDevice = AVCaptureDevice.default(.builtInWideAngleCamera,
                                                         for: .video,
@@ -118,9 +117,10 @@ final class CameraView: UIView {
         }
         session.commitConfiguration()
 
-
         DispatchQueue.main.async { [weak self] in
+            self?.videoPreviewLayer.videoGravity = AVLayerVideoGravity.resizeAspectFill
             self?.videoSession = session
+            self?.startSession()
         }
     }
 
@@ -129,15 +129,14 @@ final class CameraView: UIView {
         /// Mask layer that covering area around camera view
         let backLayer = CALayer()
         backLayer.frame = bounds
-        backLayer.backgroundColor = UIColor.black.withAlphaComponent(0.8).cgColor
+        backLayer.backgroundColor = UIColor.black.withAlphaComponent(0.7).cgColor
 
-        //  くり抜き部分のframeの計算
-        let cuttedWidth: CGFloat = bounds.width - 40
-        // クレカの縦横は1:1618の黄金比らしい
-        let cuttedHeight: CGFloat = cuttedWidth * 0.6180469716
+        //  culcurate cutoutted frame
+        let cuttedWidth: CGFloat = bounds.width - 40.0
+        let cuttedHeight: CGFloat = cuttedWidth * CreditCard.heightRatioAgainstWidth
 
-        let centerVertical = (bounds.height / 2)
-        let cuttedY: CGFloat = centerVertical - (cuttedHeight / 2)
+        let centerVertical = (bounds.height / 2.0)
+        let cuttedY: CGFloat = centerVertical - (cuttedHeight / 2.0)
         let cuttedX: CGFloat = 20.0
 
         let cuttedRect = CGRect(x: cuttedX,
@@ -151,29 +150,36 @@ final class CameraView: UIView {
         path.append(UIBezierPath(rect: bounds))
         maskLayer.path = path.cgPath
         maskLayer.fillRule = .evenOdd
-
         backLayer.mask = maskLayer
         layer.addSublayer(backLayer)
 
-        let imageHeight: CGFloat = 1920
-        let imageWidth: CGFloat = 1080
+        let strokeLayer = CAShapeLayer()
+        strokeLayer.lineWidth = 3.0
+        strokeLayer.strokeColor = UIColor.white.cgColor
+        strokeLayer.path = UIBezierPath(roundedRect: cuttedRect, cornerRadius: 10.0).cgPath
+        strokeLayer.fillColor = nil
+        layer.addSublayer(strokeLayer)
 
-        let ratioHeight = imageHeight / frame.height
-        let ratioWidth =  imageWidth / frame.width
 
-        regionOfInterest = CGRect(x: cuttedRect.origin.x * ratioWidth,
-                                  y: cuttedRect.origin.y * ratioHeight,
-                                  width: cuttedRect.width * ratioWidth,
-                                  height: cuttedRect.height * ratioHeight)
+        let imageHeight: CGFloat = imageRatio.imageHeight
+        let imageWidth: CGFloat = imageRatio.imageWidth
+
+        let acutualImageRatioAgainstVisibleSize = imageWidth / bounds.width
+        let interestX = cuttedRect.origin.x * acutualImageRatioAgainstVisibleSize
+        let interestWidth = cuttedRect.width * acutualImageRatioAgainstVisibleSize
+        let interestHeight = interestWidth * CreditCard.heightRatioAgainstWidth
+        let interestY = (imageHeight / 2.0) - (interestHeight / 2.0)
+        regionOfInterest = CGRect(x: interestX,
+                                  y: interestY,
+                                  width: interestWidth,
+                                  height: interestHeight)
     }
 
 }
 
 extension CameraView: AVCaptureVideoDataOutputSampleBufferDelegate {
-    // ここにカメラ映像の情報が連続で渡される。
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection){
 
-        // 処理を一つ一つすすめるため、排他制御
         semaphore.wait()
         defer { semaphore.signal() }
 
@@ -185,8 +191,11 @@ extension CameraView: AVCaptureVideoDataOutputSampleBufferDelegate {
         var cgImage: CGImage?
         VTCreateCGImageFromCVPixelBuffer(pixelBuffer, options: nil, imageOut: &cgImage)
 
+        guard let regionOfInterest = regionOfInterest else {
+            return
+        }
+
         guard let fullCameraImage = cgImage,
-            let regionOfInterest = regionOfInterest,
             let croppedImage = fullCameraImage.cropping(to: regionOfInterest) else {
                 delegate?.didError(with: CreditCardScannerError.init(kind: .capture))
                 return
@@ -197,3 +206,8 @@ extension CameraView: AVCaptureVideoDataOutputSampleBufferDelegate {
 }
 #endif
 #endif
+
+extension CreditCard {
+    // The aspect ratio of credit-card is Golden-ratio
+    static let heightRatioAgainstWidth: CGFloat = 0.6180469716
+}

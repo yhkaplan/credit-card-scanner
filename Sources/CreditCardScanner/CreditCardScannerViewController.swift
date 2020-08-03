@@ -53,7 +53,8 @@ open class CreditCardScannerViewController: UIViewController {
 
     open override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .black
+        layoutSubviews()
+        setupLabelsAndButtons()
         AVCaptureDevice.authorize { [weak self] authoriazed in
             // This is on the main thread.
             guard let strongSelf = self else {
@@ -63,17 +64,13 @@ open class CreditCardScannerViewController: UIViewController {
                 strongSelf.delegate?.creditCardScannerViewController(strongSelf, didErrorWith: CreditCardScannerError.init(kind: .authorizationDenied, underlyingError: nil))
                 return
             }
-
-            strongSelf.setupLabelsAndButtons()
-            strongSelf.layoutSubviews()
             strongSelf.cameraView.setupCamera()
         }
     }
 
-    open override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
+    override open func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
         cameraView.setupRegionOfInterest()
-        cameraView.startSession()
     }
 }
 
@@ -83,7 +80,9 @@ private extension CreditCardScannerViewController {
         delegate?.creditCardScannerViewControllerDidCancel(self)
     }
 
-    func layoutSubviews() { // TODO: make open for customization?
+    func layoutSubviews() {
+        view.backgroundColor = .black
+        // TODO: make open for customization?
         // TODO: test screen rotation cameraView, cutoutView
         cameraView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(cameraView)
@@ -91,7 +90,7 @@ private extension CreditCardScannerViewController {
             cameraView.topAnchor.constraint(equalTo: view.topAnchor),
             cameraView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             cameraView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            cameraView.heightAnchor.constraint(equalTo: cameraView.widthAnchor, multiplier: 1.8, constant: 0)
+            cameraView.heightAnchor.constraint(equalTo: cameraView.widthAnchor, multiplier:  CreditCard.heightRatioAgainstWidth, constant: 100)
         ])
 
         bottomStackView.translatesAutoresizingMaskIntoConstraints = false
@@ -99,21 +98,38 @@ private extension CreditCardScannerViewController {
         NSLayoutConstraint.activate([
             bottomStackView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             bottomStackView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            bottomStackView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             bottomStackView.topAnchor.constraint(equalTo: cameraView.bottomAnchor),
+        ])
+
+        cancelButton.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(cancelButton)
+        NSLayoutConstraint.activate([
+            cancelButton.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            cancelButton.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            cancelButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor,constant: -20)
         ])
 
         bottomStackView.axis = .vertical
         bottomStackView.spacing = 16.0
         bottomStackView.isLayoutMarginsRelativeArrangement = true
-        bottomStackView.directionalLayoutMargins = .init(top: 0, leading: 8.0, bottom: 8.0, trailing: 8.0)
-        let arrangedSubviews: [UIView] = [cancelButton]
+        bottomStackView.distribution = .equalSpacing
+        bottomStackView.directionalLayoutMargins = .init(top: 8.0, leading: 8.0, bottom: 8.0, trailing: 8.0)
+        let arrangedSubviews: [UIView] = [titleLabel, subtitleLabel]
         arrangedSubviews.forEach(bottomStackView.addArrangedSubview)
     }
 
     func setupLabelsAndButtons() {
+        titleLabel.text = "Add card"
+        titleLabel.textAlignment = .center
+        titleLabel.textColor = .white
+        titleLabel.font = .preferredFont(forTextStyle: .largeTitle)
+        subtitleLabel.text = "Line up card within the lines"
+        subtitleLabel.textAlignment = .center
+        subtitleLabel.font = .preferredFont(forTextStyle: .title3)
+        subtitleLabel.textColor = .white
+        subtitleLabel.numberOfLines = 0
         cancelButton.setTitle("Cancel", for: .normal)
-        cancelButton.tintColor = .white
+        cancelButton.setTitleColor(.gray, for: .normal)
         cancelButton.addTarget(self, action: #selector(cancel), for: .touchUpInside)
     }
 }
