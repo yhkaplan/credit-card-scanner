@@ -13,7 +13,7 @@ class ExampleResultViewController: UIViewController{
     @IBOutlet weak var resultLabel: UILabel!
 
     @IBAction func startButton(_ sender: UIButton) {
-        let vc = CreditCardScannerViewController(delegate: self)
+        let vc = CreditCardScannerViewController(delegate: self, customModel: .init(title: "a", subText: "b", textColor: .white, backgroundColor: .blue))
         vc.modalPresentationStyle = .fullScreen
         present(vc, animated: true, completion: nil)
     }

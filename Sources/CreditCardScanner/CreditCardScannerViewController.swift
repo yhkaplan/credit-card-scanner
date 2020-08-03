@@ -28,11 +28,13 @@ open class CreditCardScannerViewController: UIViewController {
 
     // MARK: - Subviews and layers
     /// View representing live camera
-    private lazy var cameraView: CameraView = CameraView(delegate: self)
+    private lazy var cameraView: CameraView = CameraView(delegate: self, customModel:
+        self.customModel)
     /// Analyzes text data for credit card info
     lazy var analyzer = ImageAnalyzer(delegate: self)
 
     private weak var delegate: CreditCardScannerViewControllerDelegate?
+    private let customModel: CreditCardScannerCustomModel
 
     /// The backgroundColor stack view that is below the camera preview view
     open var bottomStackView = UIStackView()
@@ -41,8 +43,10 @@ open class CreditCardScannerViewController: UIViewController {
     open var cancelButton = UIButton()
 
     // MARK: - Vision-related
-    public init(delegate: CreditCardScannerViewControllerDelegate) {
+    public init(delegate: CreditCardScannerViewControllerDelegate,
+                customModel: CreditCardScannerCustomModel = .default) {
         self.delegate = delegate
+        self.customModel = customModel
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -191,6 +195,29 @@ extension AVCaptureDevice {
         }
     }
 }
+
+public struct CreditCardScannerCustomModel {
+    let title: String
+    let subText: String
+    let textColor: UIColor
+    let backgroundColor: UIColor
+
+    public init(title: String, subText: String, textColor: UIColor, backgroundColor: UIColor) {
+        self.title = title
+        self.subText = subText
+        self.textColor = textColor
+        self.backgroundColor = backgroundColor
+    }
+
+    public static let `default` = CreditCardScannerCustomModel(
+        title: "Add card",
+        subText: "Line up card within the lines",
+        textColor: .white,
+        backgroundColor: .black
+    )
+}
+
 #endif
 #endif
 #endif
+
