@@ -73,8 +73,4 @@ enum ImageRatio {
             return 2160.0
         }
     }
-
-    var multiplierAgainstWidth: CGFloat {
-        imageHeight / imageWidth
-    }
 }
