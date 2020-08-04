@@ -1,6 +1,6 @@
 # 💳 CreditCardScanner
 
-CreditCardScanner is a library for taking a photo and scanning credit cards to make adding credit card details to user account more easy. It uses Apple's Vision API for **secure, on-device machine learning** to read following info from a credit card: number, name, and date.
+CreditCardScanner is a library for scanning credit cards to make adding payment information to user accounts easy. It uses Apple's Vision API for **secure, on-device machine learning** to read the following info from a credit card: number, name, and expiration date.
 
 ![Example of CreditCardScanner running](example.gif)
 
@@ -8,7 +8,7 @@ CreditCardScanner is a library for taking a photo and scanning credit cards to m
 
 ### Requirements
 
-- iOS 13.0+ (due to Vision APIs first appearing in iOS 13.0)
+- iOS 13.0+ (due to Vision API having first appeared in iOS 13.0)
     - Even if your minimum deployment target is iOS 12 or lower, you can make this an iOS 13.0+ only feature using `canImport` and `@available`
 
 ```swift
@@ -41,8 +41,8 @@ extension ViewController: CreditCardScannerViewControllerDelegate {
 
 - Add this to Cartfile: `github "yhkaplan/credit-card-scanner"`
 - Follow instructions on [Carthage README](https://github.com/Carthage/Carthage#if-youre-building-for-ios-tvos-or-watchos) for integration **without adding to copy files script**
-- This framework is build as a static one for Carthage, that's why it has the settings above
-- To build with Carthage yourself, run `swift package generate-xcodeproj` then run
+- This framework is build as a static framework for Carthage, that's why it has the settings above
+- To build with Carthage yourself, run `swift package generate-xcodeproj` then run the necessary Carthage commands
 
 ### Cocoapods
 
