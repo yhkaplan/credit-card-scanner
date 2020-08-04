@@ -1,6 +1,6 @@
 //
 //  CreditCardScannerError.swift
-//  
+//
 //
 //  Created by josh on 2020/07/26.
 //

@@ -1,13 +1,13 @@
 //
 //  ImageAnalyzer.swift
-//  
+//
 //
 //  Created by miyasaka on 2020/07/30.
 //
 
 import Foundation
-import Vision
 import Reg
+import Vision
 
 protocol ImageAnalyzerProtocol: AnyObject {
     func didFinishAnalyzation(with result: Result<CreditCard, CreditCardScannerError>)
@@ -30,6 +30,7 @@ final class ImageAnalyzer {
     }
 
     // MARK: - Vision-related
+
     public lazy var request = VNRecognizeTextRequest(completionHandler: requestHandler)
     func analyze(image: CGImage) {
         let requestHandler = VNImageRequestHandler(
@@ -46,10 +47,10 @@ final class ImageAnalyzer {
         }
     }
 
-    lazy var requestHandler: ((VNRequest, Error?) -> ())? = { [weak self] request, _ in
+    lazy var requestHandler: ((VNRequest, Error?) -> Void)? = { [weak self] request, _ in
         guard let strongSelf = self else { return }
 
-        let creditCardNumber: Regex = #"(\d{4}\h+\d{4}\h+\d{4}\h+\d{4})"#
+        let creditCardNumber: Regex = #"(?:\d[ -]*?){13,16}"#
         let month: Regex = #"(\d{2})\/\d{2}"#
         let year: Regex = #"\d{2}\/(\d{2})"#
         let wordsToSkip = ["mastercard", "jcb", "visa", "express", "bank", "card", "platinum", "reward"]
@@ -72,16 +73,19 @@ final class ImageAnalyzer {
             let containsWordToSkip = wordsToSkip.contains { string.lowercased().contains($0) }
             if containsWordToSkip { continue }
 
-            if let cardNumber = creditCardNumber.firstMatch(in: string) {
+            if let cardNumber = creditCardNumber.firstMatch(in: string)?
+                .replacingOccurrences(of: " ", with: "")
+                .replacingOccurrences(of: "-", with: "") {
                 creditCard.number = cardNumber
 
-            // the first capture is the entire regex match, so using the last
+                // the first capture is the entire regex match, so using the last
             } else if let month = month.captures(in: string).last.flatMap(Int.init),
-                let year = year.captures(in: string).last.flatMap(Int.init) {
+                // Appending 20 to year is necessary to get correct century
+                let year = year.captures(in: string).last.flatMap({ Int("20" + $0) }) {
                 creditCard.expireDate = DateComponents(year: year, month: month)
 
             } else if let name = name.firstMatch(in: string) {
-                let containsInvalidName = invalidNames.contains { name.lowercased().contains($0)}
+                let containsInvalidName = invalidNames.contains { name.lowercased().contains($0) }
                 if containsInvalidName { continue }
                 creditCard.name = name
 
@@ -120,5 +124,4 @@ final class ImageAnalyzer {
             strongSelf.delegate?.didFinishAnalyzation(with: .success(strongSelf.selectedCard))
         }
     }
-
 }

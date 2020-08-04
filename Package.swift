@@ -8,7 +8,8 @@ let package = Package(
     products: [
         .library(
             name: "CreditCardScanner",
-            targets: ["CreditCardScanner"]),
+            targets: ["CreditCardScanner"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/yhkaplan/Reg.git", from: "0.3.0"),
@@ -17,9 +18,11 @@ let package = Package(
     targets: [
         .target(
             name: "CreditCardScanner",
-            dependencies: ["Reg", "Sukar"]),
+            dependencies: ["Reg", "Sukar"]
+        ),
         .testTarget(
             name: "CreditCardScannerTests",
-            dependencies: ["CreditCardScanner"]),
+            dependencies: ["CreditCardScanner"]
+        ),
     ]
 )
