@@ -7,12 +7,14 @@
 
 import Foundation
 import Reg
+#if canImport(Vision)
 import Vision
 
 protocol ImageAnalyzerProtocol: AnyObject {
     func didFinishAnalyzation(with result: Result<CreditCard, CreditCardScannerError>)
 }
 
+@available(iOS 13, *)
 final class ImageAnalyzer {
     enum Candidate: Hashable {
         case number(String), name(String)
@@ -125,3 +127,4 @@ final class ImageAnalyzer {
         }
     }
 }
+#endif
