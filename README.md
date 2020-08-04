@@ -2,7 +2,7 @@
 
 CreditCardScanner is a library for taking a photo and scanning credit cards to make adding credit card details to user account more easy. It uses Apple's Vision API for **secure, on-device machine learning** to read following info from a credit card: number, name, and date.
 
-<img src="example.gif" alt="Example of CreditCardScanner running">
+[Example of CreditCardScanner running](example.gif)
 
 ## Installing
 
