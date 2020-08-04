@@ -7,6 +7,7 @@ import AVFoundation
             import UIKit
 
             /// Conform to this delegate to get notified of key events
+            @available(iOS 13, *)
             public protocol CreditCardScannerViewControllerDelegate: AnyObject {
                 /// Called user taps the cancel button. Comes with a default implementation for UIViewControllers.
                 /// - Warning: The viewController does not auto-dismiss. You must dismiss the viewController
@@ -18,12 +19,14 @@ import AVFoundation
                 func creditCardScannerViewController(_ viewController: CreditCardScannerViewController, didFinishWith card: CreditCard)
             }
 
+            @available(iOS 13, *)
             public extension CreditCardScannerViewControllerDelegate where Self: UIViewController {
                 func creditCardScannerViewControllerDidCancel(_ viewController: CreditCardScannerViewController) {
                     viewController.dismiss(animated: true)
                 }
             }
 
+            @available(iOS 13, *)
             open class CreditCardScannerViewController: UIViewController {
                 /// public propaties
                 public var titleLabelText: String = "Add card"
@@ -92,6 +95,7 @@ import AVFoundation
                 }
             }
 
+            @available(iOS 13, *)
             private extension CreditCardScannerViewController {
                 @objc func cancel(_ sender: UIButton) {
                     delegate?.creditCardScannerViewControllerDidCancel(self)
@@ -150,6 +154,7 @@ import AVFoundation
                 }
             }
 
+            @available(iOS 13, *)
             extension CreditCardScannerViewController: CameraViewDelegate {
                 internal func didCapture(image: CGImage) {
                     analyzer.analyze(image: image)
@@ -164,6 +169,7 @@ import AVFoundation
                 }
             }
 
+            @available(iOS 13, *)
             extension CreditCardScannerViewController: ImageAnalyzerProtocol {
                 internal func didFinishAnalyzation(with result: Result<CreditCard, CreditCardScannerError>) {
                     switch result {
@@ -184,6 +190,7 @@ import AVFoundation
                 }
             }
 
+            @available(iOS 13, *)
             extension AVCaptureDevice {
                 static func authorize(authorizedHandler: @escaping ((Bool) -> Void)) {
                     let mainThreadHandler: ((Bool) -> Void) = { isAuthorized in

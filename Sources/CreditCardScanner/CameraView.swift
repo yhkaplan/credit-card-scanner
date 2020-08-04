@@ -16,6 +16,7 @@
             func didError(with: CreditCardScannerError)
         }
 
+        @available(iOS 13, *)
         final class CameraView: UIView {
             weak var delegate: CameraViewDelegate?
             private let creditCardFrameStrokeColor: UIColor
@@ -190,6 +191,7 @@
             }
         }
 
+        @available(iOS 13, *)
         extension CameraView: AVCaptureVideoDataOutputSampleBufferDelegate {
             func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
                 semaphore.wait()
