@@ -100,7 +100,9 @@ $ xcodegen
 ### CardScan
 
 - [CardScan](https://github.com/getbouncer/cardscan-ios)
-- Open-source and looks well made, but it costs money to use
+- Open-source and looks well made
+- Supports iOS 11/12 unlike CreditCardScanner
+- Costs money to use
 
 ## Credits/Inspiration
 
