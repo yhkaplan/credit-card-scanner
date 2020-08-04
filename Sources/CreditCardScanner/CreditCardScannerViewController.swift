@@ -26,25 +26,43 @@ public extension CreditCardScannerViewControllerDelegate where Self: UIViewContr
 
 open class CreditCardScannerViewController: UIViewController {
 
+    /// public propaties
+    public var titleLabelText: String = "Add card"
+    public var subtitleLabelText: String = "Line up card within the lines"
+    public var cancelButtonTitleText: String = "Cancel"
+    public var cancelButtonTitleTextColor: UIColor = .gray
+    public var labelTextColor: UIColor = .white
+    public var textBackgroundColor: UIColor = .black
+    public var cameraViewCreditCardFrameStrokeColor: UIColor = .white
+    public var cameraViewMaskLayerColor: UIColor = .black
+    public var cameraViewMaskAlpha: CGFloat = 0.7
+
     // MARK: - Subviews and layers
     /// View representing live camera
-    private lazy var cameraView: CameraView = CameraView(delegate: self)
+    private lazy var cameraView: CameraView = CameraView(
+        delegate: self,
+        creditCardFrameStrokeColor: self.cameraViewCreditCardFrameStrokeColor,
+        maskLayerColor: self.cameraViewMaskLayerColor,
+        maskLayerAlpha: self.cameraViewMaskAlpha
+    )
+
     /// Analyzes text data for credit card info
-    lazy var analyzer = ImageAnalyzer(delegate: self)
+    private lazy var analyzer = ImageAnalyzer(delegate: self)
 
     private weak var delegate: CreditCardScannerViewControllerDelegate?
 
     /// The backgroundColor stack view that is below the camera preview view
-    open var bottomStackView = UIStackView()
-    open var titleLabel = UILabel()
-    open var subtitleLabel = UILabel()
-    open var cancelButton = UIButton()
+    private var bottomStackView = UIStackView()
+    private var titleLabel = UILabel()
+    private var subtitleLabel = UILabel()
+    private var cancelButton = UIButton()
 
     // MARK: - Vision-related
     public init(delegate: CreditCardScannerViewControllerDelegate) {
         self.delegate = delegate
         super.init(nibName: nil, bundle: nil)
     }
+
 
     @available(*, unavailable)
     public required init?(coder: NSCoder) {
@@ -81,8 +99,7 @@ private extension CreditCardScannerViewController {
     }
 
     func layoutSubviews() {
-        view.backgroundColor = .black
-        // TODO: make open for customization?
+        view.backgroundColor = textBackgroundColor
         // TODO: test screen rotation cameraView, cutoutView
         cameraView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(cameraView)
@@ -119,17 +136,17 @@ private extension CreditCardScannerViewController {
     }
 
     func setupLabelsAndButtons() {
-        titleLabel.text = "Add card"
+        titleLabel.text = titleLabelText
         titleLabel.textAlignment = .center
-        titleLabel.textColor = .white
+        titleLabel.textColor = labelTextColor
         titleLabel.font = .preferredFont(forTextStyle: .largeTitle)
-        subtitleLabel.text = "Line up card within the lines"
+        subtitleLabel.text = subtitleLabelText
         subtitleLabel.textAlignment = .center
         subtitleLabel.font = .preferredFont(forTextStyle: .title3)
-        subtitleLabel.textColor = .white
+        subtitleLabel.textColor = labelTextColor
         subtitleLabel.numberOfLines = 0
-        cancelButton.setTitle("Cancel", for: .normal)
-        cancelButton.setTitleColor(.gray, for: .normal)
+        cancelButton.setTitle(cancelButtonTitleText, for: .normal)
+        cancelButton.setTitleColor(cancelButtonTitleTextColor, for: .normal)
         cancelButton.addTarget(self, action: #selector(cancel), for: .touchUpInside)
     }
 }

@@ -13,6 +13,20 @@ class ExampleResultViewController: UIViewController{
     @IBOutlet weak var resultLabel: UILabel!
 
     @IBAction func startButton(_ sender: UIButton) {
+
+//        You can change only neccessary parameters.
+//        let vc = CreditCardScannerViewController(delegate: self)
+//        vc.titleLabelText = "カードを追加"
+//        vc.subtitleLabelText = "枠線にカードを合わせてください"
+//        vc.cancelButtonTitleText = "キャンセル"
+//        vc.cancelButtonTitleTextColor = .orange
+//        vc.labelTextColor = .black
+//        vc.cameraViewCreditCardFrameStrokeColor = .gray
+//        vc.cameraViewMaskLayerColor = .white
+//        vc.cameraViewMaskAlpha = 0.7
+//        vc.textBackgroundColor = .white
+
+
         let vc = CreditCardScannerViewController(delegate: self)
         vc.modalPresentationStyle = .fullScreen
         present(vc, animated: true, completion: nil)
