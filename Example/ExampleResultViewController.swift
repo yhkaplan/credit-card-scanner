@@ -50,14 +50,24 @@ extension ExampleResultViewController: CreditCardScannerViewControllerDelegate {
     }
 
     func creditCardScannerViewController(_ viewController: CreditCardScannerViewController, didErrorWith error: CreditCardScannerError) {
-        print(error.errorDescription)
+        print(error.errorDescription ?? "")
         resultLabel.text = error.errorDescription
         viewController.dismiss(animated: true, completion: nil)
     }
 
     func creditCardScannerViewController(_ viewController: CreditCardScannerViewController, didFinishWith card: CreditCard) {
         viewController.dismiss(animated: true, completion: nil)
-        resultLabel.text = ["\(card.number)", "\(card.expireDate)", "\(card.name)"].joined(separator: "\n")
+
+        var dateComponents = card.expireDate
+        dateComponents?.calendar = Calendar.current
+        let dateFormater = DateFormatter()
+        dateFormater.dateStyle = .short
+        let date = dateComponents?.date.flatMap(dateFormater.string)
+
+        let text = [card.number, date, card.name]
+            .compactMap { $0 }
+            .joined(separator: "\n")
+        resultLabel.text = text
         print("\(card)")
     }
 }

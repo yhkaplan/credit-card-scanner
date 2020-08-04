@@ -78,7 +78,8 @@ final class ImageAnalyzer {
 
                 // the first capture is the entire regex match, so using the last
             } else if let month = month.captures(in: string).last.flatMap(Int.init),
-                let year = year.captures(in: string).last.flatMap(Int.init) {
+                // Appending 20 to year is necessary to get correct century
+                let year = year.captures(in: string).last.flatMap({ Int("20" + $0) }) {
                 creditCard.expireDate = DateComponents(year: year, month: month)
 
             } else if let name = name.firstMatch(in: string) {
