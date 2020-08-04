@@ -6,3 +6,4 @@
 // they are frequently downloaded and don't have a development team set.
 SAMPLE_CODE_DISAMBIGUATOR = ${DEVELOPMENT_TEAM}
 PRODUCT_BUNDLE_IDENTIFIER = com.yhkaplan.example.credit-card-scanner
+IPHONEOS_DEPLOYMENT_TARGET = 13.0
