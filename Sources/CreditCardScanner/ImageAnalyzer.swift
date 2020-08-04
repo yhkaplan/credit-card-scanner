@@ -50,7 +50,7 @@ final class ImageAnalyzer {
     lazy var requestHandler: ((VNRequest, Error?) -> Void)? = { [weak self] request, _ in
         guard let strongSelf = self else { return }
 
-        let creditCardNumber: Regex = #"(\d{4}\h+\d{4}\h+\d{4}\h+\d{4})"#
+        let creditCardNumber: Regex = #"(?:\d[ -]*?){13,16}"#
         let month: Regex = #"(\d{2})\/\d{2}"#
         let year: Regex = #"\d{2}\/(\d{2})"#
         let wordsToSkip = ["mastercard", "jcb", "visa", "express", "bank", "card", "platinum", "reward"]
@@ -73,7 +73,9 @@ final class ImageAnalyzer {
             let containsWordToSkip = wordsToSkip.contains { string.lowercased().contains($0) }
             if containsWordToSkip { continue }
 
-            if let cardNumber = creditCardNumber.firstMatch(in: string) {
+            if let cardNumber = creditCardNumber.firstMatch(in: string)?
+                .replacingOccurrences(of: " ", with: "")
+                .replacingOccurrences(of: "-", with: "") {
                 creditCard.number = cardNumber
 
                 // the first capture is the entire regex match, so using the last
