@@ -5,15 +5,13 @@
 //  Created by miyasaka on 2020/07/30.
 //
 
-import UIKit
 import CreditCardScanner
+import UIKit
 
-class ExampleResultViewController: UIViewController{
-
-    @IBOutlet weak var resultLabel: UILabel!
+class ExampleResultViewController: UIViewController {
+    @IBOutlet var resultLabel: UILabel!
 
     @IBAction func startButton(_ sender: UIButton) {
-
 //        You can change only neccessary parameters.
 //        let vc = CreditCardScannerViewController(delegate: self)
 //        vc.titleLabelText = "カードを追加"
@@ -25,7 +23,6 @@ class ExampleResultViewController: UIViewController{
 //        vc.cameraViewMaskLayerColor = .white
 //        vc.cameraViewMaskAlpha = 0.7
 //        vc.textBackgroundColor = .white
-
 
         let vc = CreditCardScannerViewController(delegate: self)
         vc.modalPresentationStyle = .fullScreen
@@ -44,11 +41,9 @@ class ExampleResultViewController: UIViewController{
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-
 }
 
 extension ExampleResultViewController: CreditCardScannerViewControllerDelegate {
-
     func creditCardScannerViewControllerDidCancel(_ viewController: CreditCardScannerViewController) {
         viewController.dismiss(animated: true, completion: nil)
         print("cancel")
@@ -62,7 +57,7 @@ extension ExampleResultViewController: CreditCardScannerViewControllerDelegate {
 
     func creditCardScannerViewController(_ viewController: CreditCardScannerViewController, didFinishWith card: CreditCard) {
         viewController.dismiss(animated: true, completion: nil)
-        resultLabel.text = ["\(card.number)","\(card.expireDate)", "\(card.name)"].joined(separator: "\n")
+        resultLabel.text = ["\(card.number)", "\(card.expireDate)", "\(card.name)"].joined(separator: "\n")
         print("\(card)")
     }
 }

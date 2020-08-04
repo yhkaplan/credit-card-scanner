@@ -1,13 +1,13 @@
 //
 //  ImageAnalyzer.swift
-//  
+//
 //
 //  Created by miyasaka on 2020/07/30.
 //
 
 import Foundation
-import Vision
 import Reg
+import Vision
 
 protocol ImageAnalyzerProtocol: AnyObject {
     func didFinishAnalyzation(with result: Result<CreditCard, CreditCardScannerError>)
@@ -30,6 +30,7 @@ final class ImageAnalyzer {
     }
 
     // MARK: - Vision-related
+
     public lazy var request = VNRecognizeTextRequest(completionHandler: requestHandler)
     func analyze(image: CGImage) {
         let requestHandler = VNImageRequestHandler(
@@ -46,7 +47,7 @@ final class ImageAnalyzer {
         }
     }
 
-    lazy var requestHandler: ((VNRequest, Error?) -> ())? = { [weak self] request, _ in
+    lazy var requestHandler: ((VNRequest, Error?) -> Void)? = { [weak self] request, _ in
         guard let strongSelf = self else { return }
 
         let creditCardNumber: Regex = #"(\d{4}\h+\d{4}\h+\d{4}\h+\d{4})"#
@@ -75,13 +76,13 @@ final class ImageAnalyzer {
             if let cardNumber = creditCardNumber.firstMatch(in: string) {
                 creditCard.number = cardNumber
 
-            // the first capture is the entire regex match, so using the last
+                // the first capture is the entire regex match, so using the last
             } else if let month = month.captures(in: string).last.flatMap(Int.init),
                 let year = year.captures(in: string).last.flatMap(Int.init) {
                 creditCard.expireDate = DateComponents(year: year, month: month)
 
             } else if let name = name.firstMatch(in: string) {
-                let containsInvalidName = invalidNames.contains { name.lowercased().contains($0)}
+                let containsInvalidName = invalidNames.contains { name.lowercased().contains($0) }
                 if containsInvalidName { continue }
                 creditCard.name = name
 
@@ -120,5 +121,4 @@ final class ImageAnalyzer {
             strongSelf.delegate?.didFinishAnalyzation(with: .success(strongSelf.selectedCard))
         }
     }
-
 }

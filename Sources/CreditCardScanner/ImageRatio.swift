@@ -1,12 +1,12 @@
 //
 //  File.swift
-//  
+//
 //
 //  Created by miyasaka on 2020/07/31.
 //
 
-import Foundation
 import AVFoundation
+import Foundation
 
 enum ImageRatio {
     case cif352x288

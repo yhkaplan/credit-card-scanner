@@ -1,5 +1,5 @@
-import XCTest
 @testable import credit_card_scanner
+import XCTest
 
 final class credit_card_scannerTests: XCTestCase {
     func testExample() {
