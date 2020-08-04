@@ -29,6 +29,6 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           asset_content_type: application/zip
-          asset_name: time.framework.zip
-          asset_path: ./time.framework.zip
+          asset_name: CreditCardScanner.framework.zip
+          asset_path: ./CreditCardScanner.framework.zip
           upload_url: '${{ steps.create_release.outputs.upload_url }}'
