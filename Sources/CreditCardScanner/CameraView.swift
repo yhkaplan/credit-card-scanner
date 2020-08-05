@@ -199,6 +199,7 @@ extension CameraView: AVCaptureVideoDataOutputSampleBufferDelegate {
 
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
             delegate?.didError(with: CreditCardScannerError(kind: .capture))
+            delegate = nil
             return
         }
 
@@ -212,6 +213,7 @@ extension CameraView: AVCaptureVideoDataOutputSampleBufferDelegate {
         guard let fullCameraImage = cgImage,
             let croppedImage = fullCameraImage.cropping(to: regionOfInterest) else {
             delegate?.didError(with: CreditCardScannerError(kind: .capture))
+            delegate = nil
             return
         }
 
