@@ -46,6 +46,7 @@ final class ImageAnalyzer {
         } catch {
             let e = CreditCardScannerError(kind: .photoProcessing, underlyingError: error)
             delegate?.didFinishAnalyzation(with: .failure(e))
+            delegate = nil
         }
     }
 
@@ -124,6 +125,7 @@ final class ImageAnalyzer {
 
         if strongSelf.selectedCard.number != nil {
             strongSelf.delegate?.didFinishAnalyzation(with: .success(strongSelf.selectedCard))
+            strongSelf.delegate = nil
         }
     }
 }
