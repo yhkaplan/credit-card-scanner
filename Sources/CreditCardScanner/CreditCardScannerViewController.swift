@@ -57,7 +57,7 @@ open class CreditCardScannerViewController: UIViewController {
     private var bottomStackView = UIStackView()
     private var titleLabel = UILabel()
     private var subtitleLabel = UILabel()
-    private var cancelButton = UIButton()
+    private var cancelButton = UIButton(type: .system)
 
     // MARK: - Vision-related
 
